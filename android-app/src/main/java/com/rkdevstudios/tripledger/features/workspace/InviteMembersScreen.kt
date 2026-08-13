@@ -38,7 +38,15 @@ fun InviteMembersScreen(
                     TripButton(
                         text = "Generate Token",
                         onClick = {
-                            generatedToken = "MOCK-" + (1000..9999).random().toString()
+                            viewModel.createInviteToken(
+                                workspaceId = workspaceId,
+                                onSuccess = { token ->
+                                    generatedToken = token
+                                },
+                                onError = { error ->
+                                    generatedToken = "Error: $error"
+                                }
+                            )
                         }
                     )
                 } else {

@@ -78,4 +78,20 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
             Result.failure(e)
         }
     }
+
+    suspend fun createInviteToken(workspaceId: String): Result<String> {
+        return try {
+            val response = workspaceApiService.createInviteToken(
+                workspaceId = workspaceId,
+                request = com.rkdevstudios.tripledger.features.workspace.data.api.InviteRequestDto()
+            )
+            if (response.success && response.data != null) {
+                Result.success(response.data.token)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to create invite token"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

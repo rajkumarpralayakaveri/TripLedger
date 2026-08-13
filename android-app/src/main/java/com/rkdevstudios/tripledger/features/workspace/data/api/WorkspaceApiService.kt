@@ -15,6 +15,12 @@ interface WorkspaceApiService {
         @Path("id") workspaceId: String
     ): NetworkResponse<WorkspaceFinancialSnapshotDto>
 
+    @retrofit2.http.POST("api/v1/workspaces/{id}/invite")
+    suspend fun createInviteToken(
+        @Path("id") workspaceId: String,
+        @retrofit2.http.Body request: InviteRequestDto
+    ): NetworkResponse<InviteTokenDto>
+
     @retrofit2.http.POST("api/v1/workspaces/join")
     suspend fun joinWorkspace(
         @retrofit2.http.Body request: JoinRequestDto
@@ -23,6 +29,18 @@ interface WorkspaceApiService {
 
 data class JoinRequestDto(
     val inviteToken: String
+)
+
+data class InviteRequestDto(
+    val maxUses: Int = 5,
+    val expirationSeconds: Long = 86400L
+)
+
+data class InviteTokenDto(
+    val token: String,
+    val workspaceId: String,
+    val expiresAt: String?,
+    val active: Boolean
 )
 
 data class WorkspaceMemberDto(

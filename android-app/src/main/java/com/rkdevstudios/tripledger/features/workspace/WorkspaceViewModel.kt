@@ -232,6 +232,23 @@ class WorkspaceViewModel(
         }
     }
 
+    fun createInviteToken(
+        workspaceId: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            workspaceRepository.createInviteToken(workspaceId).fold(
+                onSuccess = { token ->
+                    onSuccess(token)
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to generate invite token")
+                }
+            )
+        }
+    }
+
     fun addMockExpense(
         workspaceId: String,
         description: String,
