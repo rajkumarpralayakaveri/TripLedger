@@ -1,0 +1,13 @@
+package com.rkdevstudios.tripledger;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class TripledgerBackendApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(TripledgerBackendApplication.class, args);
+	}
+
+}
