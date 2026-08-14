@@ -22,6 +22,8 @@ fun AddEditExpenseScreen(
     var category by remember { mutableStateOf("Food") }
     var payer by remember { mutableStateOf("Raj") }
 
+    val isSaving by viewModel.isSavingExpense.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -38,25 +40,29 @@ fun AddEditExpenseScreen(
         TripTextField(
             value = description,
             onValueChange = { description = it },
-            label = "Description"
+            label = "Description",
+            enabled = !isSaving
         )
 
         TripTextField(
             value = amount,
             onValueChange = { amount = it },
-            label = "Amount"
+            label = "Amount",
+            enabled = !isSaving
         )
 
         TripTextField(
             value = category,
             onValueChange = { category = it },
-            label = "Category (e.g. Food, Transport)"
+            label = "Category (e.g. Food, Transport)",
+            enabled = !isSaving
         )
 
         TripTextField(
             value = payer,
             onValueChange = { payer = it },
-            label = "Paid By"
+            label = "Paid By",
+            enabled = !isSaving
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -71,7 +77,7 @@ fun AddEditExpenseScreen(
                 modifier = Modifier.weight(1f)
             )
             TripButton(
-                text = "Save",
+                text = if (isSaving) "Saving..." else "Save",
                 onClick = {
                     val amountVal = amount.toBigDecimalOrNull() ?: BigDecimal.ZERO
                     viewModel.addMockExpense(
@@ -86,7 +92,7 @@ fun AddEditExpenseScreen(
                     )
                     onNavigateBack()
                 },
-                enabled = description.isNotBlank() && amount.isNotBlank(),
+                enabled = description.isNotBlank() && amount.isNotBlank() && !isSaving,
                 modifier = Modifier.weight(1f)
             )
         }

@@ -17,7 +17,8 @@ fun TripTextField(
     label: String,
     modifier: Modifier = Modifier,
     placeholder: String? = null,
-    singleLine: Boolean = true
+    singleLine: Boolean = true,
+    enabled: Boolean = true
 ) {
     OutlinedTextField(
         value = value,
@@ -26,6 +27,7 @@ fun TripTextField(
         label = { Text(text = label) },
         placeholder = placeholder?.let { { Text(text = it) } },
         singleLine = singleLine,
+        enabled = enabled,
         shape = MaterialTheme.shapes.medium,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = MaterialTheme.colorScheme.primary,

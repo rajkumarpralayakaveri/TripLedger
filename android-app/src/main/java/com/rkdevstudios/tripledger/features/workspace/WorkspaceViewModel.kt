@@ -77,6 +77,26 @@ class WorkspaceViewModel(
     private val _currentFinancialSnapshot = MutableStateFlow<MockFinancialSnapshot?>(null)
     val currentFinancialSnapshot: StateFlow<MockFinancialSnapshot?> = _currentFinancialSnapshot.asStateFlow()
 
+    // ViewModel-owned in-flight guards
+    private val _isCreatingWorkspace = MutableStateFlow(false)
+    val isCreatingWorkspace: StateFlow<Boolean> = _isCreatingWorkspace.asStateFlow()
+
+    private val _isJoiningWorkspace = MutableStateFlow(false)
+    val isJoiningWorkspace: StateFlow<Boolean> = _isJoiningWorkspace.asStateFlow()
+
+    private val _isSavingExpense = MutableStateFlow(false)
+    val isSavingExpense: StateFlow<Boolean> = _isSavingExpense.asStateFlow()
+
+    private val _isGeneratingInvite = MutableStateFlow(false)
+    val isGeneratingInvite: StateFlow<Boolean> = _isGeneratingInvite.asStateFlow()
+
+    // Refresh loaders
+    private val _isRefreshingWorkspaces = MutableStateFlow(false)
+    val isRefreshingWorkspaces: StateFlow<Boolean> = _isRefreshingWorkspaces.asStateFlow()
+
+    private val _isRefreshingSummary = MutableStateFlow(false)
+    val isRefreshingSummary: StateFlow<Boolean> = _isRefreshingSummary.asStateFlow()
+
     // SETTLEMENT & EXPENSE TIMELINE MOCKS (To keep UI functional)
     private val _financialSnapshots = MutableStateFlow<Map<String, MockFinancialSnapshot>>(emptyMap())
     private val _timelines = MutableStateFlow<Map<String, List<ExpenseTimelineGroup>>>(emptyMap())
@@ -112,10 +132,37 @@ class WorkspaceViewModel(
                     _workspaces.value = list
                 },
                 onFailure = { error ->
-                    _workspacesError.value = error.message ?: "Failed to load workspaces"
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please try again."
+                        is java.net.SocketTimeoutException -> "Connection timed out. Please try again."
+                        else -> error.message ?: "Failed to load workspaces"
+                    }
+                    _workspacesError.value = friendlyMsg
                 }
             )
             _isLoadingWorkspaces.value = false
+        }
+    }
+
+    fun refreshWorkspaces() {
+        if (_isRefreshingWorkspaces.value) return
+        _isRefreshingWorkspaces.value = true
+        viewModelScope.launch {
+            workspaceRepository.getWorkspaces().fold(
+                onSuccess = { list ->
+                    _workspaces.value = list
+                    _workspacesError.value = null
+                },
+                onFailure = { error ->
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network and try again."
+                        is java.net.SocketTimeoutException -> "Connection timed out. Please try again."
+                        else -> error.message ?: "Failed to refresh workspaces"
+                    }
+                    _workspacesError.value = friendlyMsg
+                }
+            )
+            _isRefreshingWorkspaces.value = false
         }
     }
 
@@ -129,7 +176,12 @@ class WorkspaceViewModel(
                     _currentFinancialSnapshot.value = snapshot
                 },
                 onFailure = { error ->
-                    _summaryError.value = error.message ?: "Failed to load financial summary"
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network and try again."
+                        is java.net.SocketTimeoutException -> "Connection timed out. Please try again."
+                        else -> error.message ?: "Failed to load financial summary"
+                    }
+                    _summaryError.value = friendlyMsg
                 }
             )
             _isLoadingSummary.value = false
@@ -141,6 +193,28 @@ class WorkspaceViewModel(
         _currentBalances.value = _balances.value[id] ?: emptyList()
         _currentPlan.value = _plans.value[id]
         _currentHistory.value = _history.value[id] ?: emptyList()
+    }
+
+    fun refreshFinancialSummary(id: String) {
+        if (_isRefreshingSummary.value) return
+        _isRefreshingSummary.value = true
+        viewModelScope.launch {
+            workspaceRepository.getFinancialSummary(id).fold(
+                onSuccess = { snapshot ->
+                    _currentFinancialSnapshot.value = snapshot
+                    _summaryError.value = null
+                },
+                onFailure = { error ->
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network and try again."
+                        is java.net.SocketTimeoutException -> "Connection timed out. Please try again."
+                        else -> error.message ?: "Failed to refresh details"
+                    }
+                    _summaryError.value = friendlyMsg
+                }
+            )
+            _isRefreshingSummary.value = false
+        }
     }
 
     fun confirmMockTransfer(workspaceId: String, transferId: String) {
@@ -209,6 +283,8 @@ class WorkspaceViewModel(
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
+        if (_isCreatingWorkspace.value) return
+        _isCreatingWorkspace.value = true
         viewModelScope.launch {
             workspaceRepository.createWorkspace(
                 name = name,
@@ -224,13 +300,21 @@ class WorkspaceViewModel(
                     onSuccess()
                 },
                 onFailure = { error ->
-                    onError(error.message ?: "Failed to create workspace")
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please try again."
+                        is java.net.SocketTimeoutException -> "Request timed out. Please try again."
+                        else -> error.message ?: "Failed to create workspace"
+                    }
+                    onError(friendlyMsg)
                 }
             )
+            _isCreatingWorkspace.value = false
         }
     }
 
     fun joinWorkspace(inviteToken: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        if (_isJoiningWorkspace.value) return
+        _isJoiningWorkspace.value = true
         viewModelScope.launch {
             workspaceRepository.joinWorkspace(inviteToken).fold(
                 onSuccess = {
@@ -238,9 +322,15 @@ class WorkspaceViewModel(
                     onSuccess()
                 },
                 onFailure = { error ->
-                    onError(error.message ?: "Failed to join workspace")
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please try again."
+                        is java.net.SocketTimeoutException -> "Request timed out. Please try again."
+                        else -> error.message ?: "Failed to join workspace"
+                    }
+                    onError(friendlyMsg)
                 }
             )
+            _isJoiningWorkspace.value = false
         }
     }
 
@@ -249,15 +339,23 @@ class WorkspaceViewModel(
         onSuccess: (String) -> Unit,
         onError: (String) -> Unit
     ) {
+        if (_isGeneratingInvite.value) return
+        _isGeneratingInvite.value = true
         viewModelScope.launch {
             workspaceRepository.createInviteToken(workspaceId).fold(
                 onSuccess = { token ->
                     onSuccess(token)
                 },
                 onFailure = { error ->
-                    onError(error.message ?: "Failed to generate invite token")
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please try again."
+                        is java.net.SocketTimeoutException -> "Request timed out. Please try again."
+                        else -> error.message ?: "Failed to generate invite token"
+                    }
+                    onError(friendlyMsg)
                 }
             )
+            _isGeneratingInvite.value = false
         }
     }
 
@@ -271,38 +369,44 @@ class WorkspaceViewModel(
         categoryColor: String,
         categoryIcon: String
     ) {
-        val newItem = ExpenseItem(
-            id = "e_${System.currentTimeMillis()}",
-            description = description,
-            amount = amount,
-            currency = currency,
-            paidByName = paidByName,
-            date = LocalDate.now(),
-            categoryName = categoryName,
-            categoryColor = categoryColor,
-            categoryIcon = categoryIcon
-        )
+        if (_isSavingExpense.value) return
+        _isSavingExpense.value = true
+        try {
+            val newItem = ExpenseItem(
+                id = "e_${System.currentTimeMillis()}",
+                description = description,
+                amount = amount,
+                currency = currency,
+                paidByName = paidByName,
+                date = LocalDate.now(),
+                categoryName = categoryName,
+                categoryColor = categoryColor,
+                categoryIcon = categoryIcon
+            )
 
-        val currentGroups = _timelines.value[workspaceId] ?: emptyList()
-        val todayGroup = currentGroups.find { it.date == LocalDate.now() }
+            val currentGroups = _timelines.value[workspaceId] ?: emptyList()
+            val todayGroup = currentGroups.find { it.date == LocalDate.now() }
 
-        val updatedGroups = if (todayGroup != null) {
-            currentGroups.map {
-                if (it.date == LocalDate.now()) it.copy(expenses = it.expenses + newItem) else it
+            val updatedGroups = if (todayGroup != null) {
+                currentGroups.map {
+                    if (it.date == LocalDate.now()) it.copy(expenses = it.expenses + newItem) else it
+                }
+            } else {
+                listOf(ExpenseTimelineGroup(LocalDate.now(), listOf(newItem))) + currentGroups
             }
-        } else {
-            listOf(ExpenseTimelineGroup(LocalDate.now(), listOf(newItem))) + currentGroups
+
+            _timelines.value = _timelines.value + (workspaceId to updatedGroups)
+
+            val newActivity = ActivityFeedItem(
+                id = "a_${System.currentTimeMillis()}",
+                message = "$paidByName added $description",
+                timestamp = "Just now"
+            )
+            _activities.value = _activities.value + (workspaceId to (listOf(newActivity) + (_activities.value[workspaceId] ?: emptyList())))
+
+            selectWorkspace(workspaceId)
+        } finally {
+            _isSavingExpense.value = false
         }
-
-        _timelines.value = _timelines.value + (workspaceId to updatedGroups)
-
-        val newActivity = ActivityFeedItem(
-            id = "a_${System.currentTimeMillis()}",
-            message = "$paidByName added $description",
-            timestamp = "Just now"
-        )
-        _activities.value = _activities.value + (workspaceId to (listOf(newActivity) + (_activities.value[workspaceId] ?: emptyList())))
-
-        selectWorkspace(workspaceId)
     }
 }

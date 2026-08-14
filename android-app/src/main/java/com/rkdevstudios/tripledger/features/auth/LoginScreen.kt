@@ -30,6 +30,10 @@ fun LoginScreen(
     onNavigateToDashboard: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    val isLoggingIn by viewModel.isLoggingIn.collectAsState()
+    val isRegistering by viewModel.isRegistering.collectAsState()
+    val isSubmitting = isLoggingIn || isRegistering
+    
     var isRegisterMode by remember { mutableStateOf(false) }
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -60,7 +64,8 @@ fun LoginScreen(
             TripTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = "Full Name"
+                label = "Full Name",
+                enabled = !isSubmitting
             )
             Spacer(modifier = Modifier.height(TripSpacing.S))
         }
@@ -68,7 +73,8 @@ fun LoginScreen(
         TripTextField(
             value = email,
             onValueChange = { email = it },
-            label = "Email Address"
+            label = "Email Address",
+            enabled = !isSubmitting
         )
 
         Spacer(modifier = Modifier.height(TripSpacing.S))
@@ -76,13 +82,18 @@ fun LoginScreen(
         TripTextField(
             value = password,
             onValueChange = { password = it },
-            label = "Password"
+            label = "Password",
+            enabled = !isSubmitting
         )
 
         Spacer(modifier = Modifier.height(TripSpacing.M))
 
-        if (authState is AuthState.Loading) {
-            TripLoadingIndicator()
+        if (isSubmitting) {
+            TripButton(
+                text = if (isRegisterMode) "Registering..." else "Logging In...",
+                onClick = {},
+                enabled = false
+            )
         } else {
             TripButton(
                 text = if (isRegisterMode) "Register" else "Log In",

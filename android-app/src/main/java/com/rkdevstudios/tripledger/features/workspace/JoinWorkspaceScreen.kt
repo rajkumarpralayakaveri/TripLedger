@@ -15,6 +15,9 @@ fun JoinWorkspaceScreen(
     onNavigateBack: () -> Unit
 ) {
     var inviteToken by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val isJoining by viewModel.isJoiningWorkspace.collectAsState()
 
     Column(
         modifier = Modifier
@@ -32,8 +35,18 @@ fun JoinWorkspaceScreen(
         TripTextField(
             value = inviteToken,
             onValueChange = { inviteToken = it },
-            label = "Invite Token"
+            label = "Invite Token",
+            enabled = !isJoining
         )
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(vertical = TripSpacing.S)
+            )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -47,11 +60,16 @@ fun JoinWorkspaceScreen(
                 modifier = Modifier.weight(1f)
             )
             TripButton(
-                text = "Join",
+                text = if (isJoining) "Joining..." else "Join",
                 onClick = {
-                    viewModel.joinWorkspace(inviteToken, onSuccess = onNavigateBack)
+                    errorMessage = null
+                    viewModel.joinWorkspace(
+                        inviteToken = inviteToken,
+                        onSuccess = onNavigateBack,
+                        onError = { errorMessage = it }
+                    )
                 },
-                enabled = inviteToken.isNotBlank(),
+                enabled = inviteToken.isNotBlank() && !isJoining,
                 modifier = Modifier.weight(1f)
             )
         }

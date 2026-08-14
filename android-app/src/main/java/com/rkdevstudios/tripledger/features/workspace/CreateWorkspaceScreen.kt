@@ -21,6 +21,9 @@ fun CreateWorkspaceScreen(
     var baseCurrency by remember { mutableStateOf("INR") }
     var budget by remember { mutableStateOf("") }
     var plannedMemberCount by remember { mutableStateOf("5") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val isCreating by viewModel.isCreatingWorkspace.collectAsState()
 
     Column(
         modifier = Modifier
@@ -38,32 +41,46 @@ fun CreateWorkspaceScreen(
         TripTextField(
             value = name,
             onValueChange = { name = it },
-            label = "Trip Name"
+            label = "Trip Name",
+            enabled = !isCreating
         )
 
         TripTextField(
             value = description,
             onValueChange = { description = it },
-            label = "Description (Optional)"
+            label = "Description (Optional)",
+            enabled = !isCreating
         )
 
         TripTextField(
             value = baseCurrency,
             onValueChange = { baseCurrency = it },
-            label = "Base Currency (ISO)"
+            label = "Base Currency (ISO)",
+            enabled = !isCreating
         )
 
         TripTextField(
             value = budget,
             onValueChange = { budget = it },
-            label = "Total Budget"
+            label = "Total Budget",
+            enabled = !isCreating
         )
 
         TripTextField(
             value = plannedMemberCount,
             onValueChange = { plannedMemberCount = it },
-            label = "Expected Member Count"
+            label = "Expected Member Count",
+            enabled = !isCreating
         )
+
+        if (errorMessage != null) {
+            Text(
+                text = errorMessage ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(vertical = TripSpacing.S)
+            )
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -77,8 +94,9 @@ fun CreateWorkspaceScreen(
                 modifier = Modifier.weight(1f)
             )
             TripButton(
-                text = "Save",
+                text = if (isCreating) "Creating Trip..." else "Save",
                 onClick = {
+                    errorMessage = null
                     val budgetDecimal = budget.toBigDecimalOrNull()
                     val members = plannedMemberCount.toIntOrNull() ?: 1
                     viewModel.createWorkspace(
@@ -89,10 +107,11 @@ fun CreateWorkspaceScreen(
                         baseCurrency = baseCurrency,
                         budget = budgetDecimal,
                         plannedMemberCount = members,
-                        onSuccess = onNavigateBack
+                        onSuccess = onNavigateBack,
+                        onError = { errorMessage = it }
                     )
                 },
-                enabled = name.isNotBlank() && (plannedMemberCount.toIntOrNull() ?: 0) >= 1,
+                enabled = name.isNotBlank() && (plannedMemberCount.toIntOrNull() ?: 0) >= 1 && !isCreating,
                 modifier = Modifier.weight(1f)
             )
         }

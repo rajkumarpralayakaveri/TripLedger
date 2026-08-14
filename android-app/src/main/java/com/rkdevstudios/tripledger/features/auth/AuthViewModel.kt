@@ -20,6 +20,12 @@ class AuthViewModel(
     private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
+    private val _isLoggingIn = MutableStateFlow(false)
+    val isLoggingIn: StateFlow<Boolean> = _isLoggingIn.asStateFlow()
+
+    private val _isRegistering = MutableStateFlow(false)
+    val isRegistering: StateFlow<Boolean> = _isRegistering.asStateFlow()
+
     init {
         checkSession()
     }
@@ -37,6 +43,8 @@ class AuthViewModel(
     }
 
     fun loginWithEmail(email: String, authCode: String) {
+        if (_isLoggingIn.value) return
+        _isLoggingIn.value = true
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val result = authRepository.login(email, authCode)
@@ -50,13 +58,21 @@ class AuthViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _authState.value = AuthState.Error(error.message ?: "Authentication failed")
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network and try again."
+                        is java.net.SocketTimeoutException -> "Request timed out. Please try again."
+                        else -> error.message ?: "Authentication failed"
+                    }
+                    _authState.value = AuthState.Error(friendlyMsg)
                 }
             )
+            _isLoggingIn.value = false
         }
     }
 
     fun registerWithEmail(name: String, email: String, authCode: String) {
+        if (_isRegistering.value) return
+        _isRegistering.value = true
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             val result = authRepository.register(name, email, authCode)
@@ -70,9 +86,15 @@ class AuthViewModel(
                     }
                 },
                 onFailure = { error ->
-                    _authState.value = AuthState.Error(error.message ?: "Registration failed")
+                    val friendlyMsg = when (error) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network and try again."
+                        is java.net.SocketTimeoutException -> "Request timed out. Please try again."
+                        else -> error.message ?: "Registration failed"
+                    }
+                    _authState.value = AuthState.Error(friendlyMsg)
                 }
             )
+            _isRegistering.value = false
         }
     }
 
