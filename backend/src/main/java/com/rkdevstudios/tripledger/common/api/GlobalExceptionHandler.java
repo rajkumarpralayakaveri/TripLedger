@@ -24,9 +24,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<ApiResponse<Void>> handleSecurity(SecurityException ex) {
+        HttpStatus status = HttpStatus.FORBIDDEN;
+        String code = "FORBIDDEN";
+        if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("not authenticated")) {
+            status = HttpStatus.UNAUTHORIZED;
+            code = "UNAUTHORIZED";
+        }
         return ResponseEntity
-            .status(HttpStatus.FORBIDDEN)
-            .body(ApiResponse.error("FORBIDDEN", ex.getMessage()));
+            .status(status)
+            .body(ApiResponse.error(code, ex.getMessage()));
     }
 
     @ExceptionHandler(IllegalStateException.class)
