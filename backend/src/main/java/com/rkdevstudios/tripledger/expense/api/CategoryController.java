@@ -31,7 +31,7 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getCategories(@PathVariable("id") String id) {
         getAuthenticatedUser();
         List<ExpenseCategory> list = categoryService.getAvailableCategories(id);
         List<CategoryResponse> responses = list.stream().map(c -> new CategoryResponse(
@@ -48,7 +48,7 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<ExpenseCategory>> createCustomCategory(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @Valid @RequestBody CategoryCreateRequest request
     ) {
         getAuthenticatedUser();
@@ -63,8 +63,8 @@ public class CategoryController {
 
     @PutMapping("/{categoryId}/toggle")
     public ResponseEntity<ApiResponse<ExpenseCategory>> toggleCategory(
-            @PathVariable String id,
-            @PathVariable String categoryId,
+            @PathVariable("id") String id,
+            @PathVariable("categoryId") String categoryId,
             @RequestParam boolean active
     ) {
         getAuthenticatedUser();

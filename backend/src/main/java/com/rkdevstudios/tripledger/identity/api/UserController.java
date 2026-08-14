@@ -36,7 +36,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<Map<String, String>>> getUser(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> getUser(@PathVariable("id") String id) {
         return userService.getUserById(id)
             .map(user -> ResponseEntity.ok(ApiResponse.success(Map.of(
                 "id", user.getId(),

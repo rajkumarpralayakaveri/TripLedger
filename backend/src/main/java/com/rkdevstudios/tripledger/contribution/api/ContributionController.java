@@ -60,7 +60,7 @@ public class ContributionController {
     }
 
     @GetMapping("/contributions")
-    public ResponseEntity<ApiResponse<List<ContributionSummary>>> getContributions(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<List<ContributionSummary>>> getContributions(@PathVariable("id") String id) {
         User user = getAuthenticatedUser();
         List<ContributionSummary> summaries = contributionService.getAllContributionSummaries(id, user.getId());
         return ResponseEntity.ok(ApiResponse.success(summaries));
@@ -68,7 +68,7 @@ public class ContributionController {
 
     @PutMapping("/contributions")
     public ResponseEntity<ApiResponse<ContributionEntry>> recordCashContribution(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @Valid @RequestBody CashContributionRequest request
     ) {
         User user = getAuthenticatedUser();
@@ -84,7 +84,7 @@ public class ContributionController {
 
     @PostMapping("/contributions/adjust")
     public ResponseEntity<ApiResponse<ContributionEntry>> recordAdjustment(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @Valid @RequestBody AdjustmentRequest request
     ) {
         User user = getAuthenticatedUser();
@@ -99,7 +99,7 @@ public class ContributionController {
     }
 
     @GetMapping("/fund")
-    public ResponseEntity<ApiResponse<TripFund>> getTripFund(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<TripFund>> getTripFund(@PathVariable("id") String id) {
         User user = getAuthenticatedUser();
         Workspace workspace = getWorkspaceAndVerifyMember(id, user.getId());
         BigDecimal budget = workspace.getBudget() != null ? workspace.getBudget() : BigDecimal.ZERO;
@@ -108,7 +108,7 @@ public class ContributionController {
     }
 
     @GetMapping("/budget")
-    public ResponseEntity<ApiResponse<BudgetResponse>> getBudget(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<BudgetResponse>> getBudget(@PathVariable("id") String id) {
         User user = getAuthenticatedUser();
         Workspace workspace = getWorkspaceAndVerifyMember(id, user.getId());
         BigDecimal budget = workspace.getBudget() != null ? workspace.getBudget() : BigDecimal.ZERO;
@@ -123,7 +123,7 @@ public class ContributionController {
     }
 
     @GetMapping("/financial-summary")
-    public ResponseEntity<ApiResponse<WorkspaceFinancialSnapshot>> getFinancialSummary(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<WorkspaceFinancialSnapshot>> getFinancialSummary(@PathVariable("id") String id) {
         User user = getAuthenticatedUser();
         Workspace workspace = getWorkspaceAndVerifyMember(id, user.getId());
         BigDecimal budget = workspace.getBudget() != null ? workspace.getBudget() : BigDecimal.ZERO;
@@ -144,7 +144,7 @@ public class ContributionController {
 
     @PutMapping("/strategy")
     public ResponseEntity<ApiResponse<Void>> updateStrategy(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @Valid @RequestBody ContributionStrategyRequest request
     ) {
         User user = getAuthenticatedUser();
