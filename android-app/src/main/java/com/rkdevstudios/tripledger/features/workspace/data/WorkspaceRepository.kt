@@ -94,4 +94,46 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
             Result.failure(e)
         }
     }
+
+    suspend fun createWorkspace(
+        name: String,
+        description: String?,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        baseCurrency: String,
+        budget: java.math.BigDecimal?
+    ): Result<MockWorkspace> {
+        return try {
+            val response = workspaceApiService.createWorkspace(
+                com.rkdevstudios.tripledger.features.workspace.data.api.WorkspaceCreateRequestDto(
+                    name = name,
+                    description = description,
+                    startDate = startDate.toString(),
+                    endDate = endDate.toString(),
+                    baseCurrency = baseCurrency,
+                    budget = budget
+                )
+            )
+            if (response.success && response.data != null) {
+                val dto = response.data
+                Result.success(
+                    MockWorkspace(
+                        id = dto.id,
+                        name = dto.name,
+                        description = dto.description,
+                        startDate = LocalDate.parse(dto.startDate),
+                        endDate = LocalDate.parse(dto.endDate),
+                        baseCurrency = dto.baseCurrency,
+                        budget = dto.budget,
+                        status = dto.status,
+                        membersCount = 1
+                    )
+                )
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to create workspace"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

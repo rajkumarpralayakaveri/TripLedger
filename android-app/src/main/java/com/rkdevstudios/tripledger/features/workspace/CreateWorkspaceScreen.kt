@@ -79,9 +79,9 @@ fun CreateWorkspaceScreen(
                         startDate = LocalDate.now(),
                         endDate = LocalDate.now().plusDays(7),
                         baseCurrency = baseCurrency,
-                        budget = budgetDecimal
+                        budget = budgetDecimal,
+                        onSuccess = onNavigateBack
                     )
-                    onNavigateBack()
                 },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.weight(1f)

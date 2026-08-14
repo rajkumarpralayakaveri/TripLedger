@@ -25,7 +25,22 @@ interface WorkspaceApiService {
     suspend fun joinWorkspace(
         @retrofit2.http.Body request: JoinRequestDto
     ): NetworkResponse<WorkspaceMemberDto>
+
+    @retrofit2.http.POST("api/v1/workspaces")
+    suspend fun createWorkspace(
+        @retrofit2.http.Body request: WorkspaceCreateRequestDto
+    ): NetworkResponse<WorkspaceDto>
 }
+
+data class WorkspaceCreateRequestDto(
+    val name: String,
+    val description: String?,
+    val startDate: String,
+    val endDate: String,
+    val baseCurrency: String,
+    val budget: BigDecimal?,
+    val contributionStrategy: String = "EQUAL"
+)
 
 data class JoinRequestDto(
     val inviteToken: String

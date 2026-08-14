@@ -201,21 +201,28 @@ class WorkspaceViewModel(
         startDate: LocalDate,
         endDate: LocalDate,
         baseCurrency: String,
-        budget: BigDecimal?
+        budget: BigDecimal?,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
     ) {
-        val workspaceId = "ws_${System.currentTimeMillis()}"
-        val newWs = MockWorkspace(
-            id = workspaceId,
-            name = name,
-            description = description,
-            startDate = startDate,
-            endDate = endDate,
-            baseCurrency = baseCurrency,
-            budget = budget,
-            status = "PLANNING",
-            membersCount = 1
-        )
-        _workspaces.value = _workspaces.value + newWs
+        viewModelScope.launch {
+            workspaceRepository.createWorkspace(
+                name = name,
+                description = description,
+                startDate = startDate,
+                endDate = endDate,
+                baseCurrency = baseCurrency,
+                budget = budget
+            ).fold(
+                onSuccess = { newWs ->
+                    _workspaces.value = _workspaces.value + newWs
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to create workspace")
+                }
+            )
+        }
     }
 
     fun joinWorkspace(inviteToken: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
