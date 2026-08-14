@@ -39,6 +39,7 @@ data class WorkspaceCreateRequestDto(
     val endDate: String,
     val baseCurrency: String,
     val budget: BigDecimal?,
+    val plannedMemberCount: Int,
     val contributionStrategy: String = "EQUAL"
 )
 
@@ -72,6 +73,7 @@ data class WorkspaceDto(
     val endDate: String,
     val baseCurrency: String,
     val budget: BigDecimal?,
+    val plannedMemberCount: Int,
     val status: String,
     val contributionStrategy: String
 )

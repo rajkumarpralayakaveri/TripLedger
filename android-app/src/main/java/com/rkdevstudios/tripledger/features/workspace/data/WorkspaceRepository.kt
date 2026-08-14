@@ -21,6 +21,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         endDate = LocalDate.parse(dto.endDate),
                         baseCurrency = dto.baseCurrency,
                         budget = dto.budget,
+                        plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
                         membersCount = 1 // Simplified placeholder, actual members fetched in detail snapshot
                     )
@@ -54,6 +55,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                     spent = dto.totalSpent,
                     currentFund = dto.currentFund,
                     fundingGap = dto.fundingGap,
+                    memberCount = dto.memberCount,
                     fundedMembers = dto.fundedMembers,
                     pendingMembers = dto.pendingMembers,
                     contributions = contributions
@@ -101,7 +103,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
         startDate: LocalDate,
         endDate: LocalDate,
         baseCurrency: String,
-        budget: java.math.BigDecimal?
+        budget: java.math.BigDecimal?,
+        plannedMemberCount: Int
     ): Result<MockWorkspace> {
         return try {
             val response = workspaceApiService.createWorkspace(
@@ -111,7 +114,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                     startDate = startDate.toString(),
                     endDate = endDate.toString(),
                     baseCurrency = baseCurrency,
-                    budget = budget
+                    budget = budget,
+                    plannedMemberCount = plannedMemberCount
                 )
             )
             if (response.success && response.data != null) {
@@ -125,6 +129,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         endDate = LocalDate.parse(dto.endDate),
                         baseCurrency = dto.baseCurrency,
                         budget = dto.budget,
+                        plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
                         membersCount = 1
                     )

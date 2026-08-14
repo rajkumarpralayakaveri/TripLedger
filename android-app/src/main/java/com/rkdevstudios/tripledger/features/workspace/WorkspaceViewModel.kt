@@ -26,6 +26,7 @@ data class MockWorkspace(
     val endDate: LocalDate,
     val baseCurrency: String,
     val budget: BigDecimal?,
+    val plannedMemberCount: Int,
     val status: String,
     val membersCount: Int
 )
@@ -44,6 +45,7 @@ data class MockFinancialSnapshot(
     val spent: BigDecimal,
     val currentFund: BigDecimal,
     val fundingGap: BigDecimal,
+    val memberCount: Int,
     val fundedMembers: Int,
     val pendingMembers: Int,
     val contributions: List<MockContributionSummary>
@@ -202,6 +204,7 @@ class WorkspaceViewModel(
         endDate: LocalDate,
         baseCurrency: String,
         budget: BigDecimal?,
+        plannedMemberCount: Int,
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
@@ -212,7 +215,8 @@ class WorkspaceViewModel(
                 startDate = startDate,
                 endDate = endDate,
                 baseCurrency = baseCurrency,
-                budget = budget
+                budget = budget,
+                plannedMemberCount = plannedMemberCount
             ).fold(
                 onSuccess = { newWs ->
                     _workspaces.value = _workspaces.value + newWs

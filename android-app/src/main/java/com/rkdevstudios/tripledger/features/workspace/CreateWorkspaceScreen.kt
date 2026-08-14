@@ -20,6 +20,7 @@ fun CreateWorkspaceScreen(
     var description by remember { mutableStateOf("") }
     var baseCurrency by remember { mutableStateOf("INR") }
     var budget by remember { mutableStateOf("") }
+    var plannedMemberCount by remember { mutableStateOf("5") }
 
     Column(
         modifier = Modifier
@@ -58,6 +59,12 @@ fun CreateWorkspaceScreen(
             label = "Total Budget"
         )
 
+        TripTextField(
+            value = plannedMemberCount,
+            onValueChange = { plannedMemberCount = it },
+            label = "Expected Member Count"
+        )
+
         Spacer(modifier = Modifier.weight(1f))
 
         Row(
@@ -73,6 +80,7 @@ fun CreateWorkspaceScreen(
                 text = "Save",
                 onClick = {
                     val budgetDecimal = budget.toBigDecimalOrNull()
+                    val members = plannedMemberCount.toIntOrNull() ?: 1
                     viewModel.createWorkspace(
                         name = name,
                         description = description.takeIf { it.isNotBlank() },
@@ -80,10 +88,11 @@ fun CreateWorkspaceScreen(
                         endDate = LocalDate.now().plusDays(7),
                         baseCurrency = baseCurrency,
                         budget = budgetDecimal,
+                        plannedMemberCount = members,
                         onSuccess = onNavigateBack
                     )
                 },
-                enabled = name.isNotBlank(),
+                enabled = name.isNotBlank() && (plannedMemberCount.toIntOrNull() ?: 0) >= 1,
                 modifier = Modifier.weight(1f)
             )
         }

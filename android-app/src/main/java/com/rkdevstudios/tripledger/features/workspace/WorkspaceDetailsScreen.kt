@@ -106,8 +106,7 @@ fun WorkspaceDetailsScreen(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    Text(text = "Members: ${snap.fundedMembers} Funded", style = MaterialTheme.typography.bodyMedium)
-                                    Text(text = "${snap.pendingMembers} Pending", style = MaterialTheme.typography.bodyMedium)
+                                    Text(text = "Members: ${snap.memberCount} Joined / ${ws.plannedMemberCount} Expected", style = MaterialTheme.typography.bodyMedium)
                                 }
                             }
                         }
@@ -135,7 +134,7 @@ fun WorkspaceDetailsScreen(
                                     Text(
                                         text = member.status.replace("_", " "),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = if (member.status == "FULLY_FUNDED") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                                        color = if (member.status == "FULLY_FUNDED" || member.status == "OVER_FUNDED") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(TripSpacing.XS))
