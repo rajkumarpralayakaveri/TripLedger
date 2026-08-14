@@ -218,10 +218,16 @@ public class ContributionService {
                 .map(User::getName)
                 .orElse("Unknown Member");
 
+        com.rkdevstudios.tripledger.workspace.domain.MemberRole role = workspaceMemberRepository
+                .findByWorkspaceIdAndUserId(workspaceId, userId)
+                .map(com.rkdevstudios.tripledger.workspace.domain.WorkspaceMember::getRole)
+                .orElse(com.rkdevstudios.tripledger.workspace.domain.MemberRole.MEMBER);
+
         return ContributionSummary.compute(
                 workspaceId,
                 userId,
                 name,
+                role,
                 planned.getPlannedAmount(),
                 cash,
                 directExpense,

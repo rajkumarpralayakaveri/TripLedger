@@ -107,6 +107,7 @@ public class WorkspaceService {
                 percentages
         );
 
+        savedWorkspace.setMemberCount(1);
         return savedWorkspace;
     }
 
@@ -178,6 +179,8 @@ public class WorkspaceService {
             );
         }
 
+        int count = workspaceMemberRepository.findByWorkspaceId(workspaceId).size();
+        saved.setMemberCount(count);
         return saved;
     }
 
@@ -304,8 +307,11 @@ public class WorkspaceService {
 
     public Workspace getWorkspaceById(String workspaceId, String callerUserId) {
         verifyRole(workspaceId, callerUserId, MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER);
-        return workspaceRepository.findById(workspaceId)
+        Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
+        int count = workspaceMemberRepository.findByWorkspaceId(workspaceId).size();
+        workspace.setMemberCount(count);
+        return workspace;
     }
 
     public List<Workspace> getCallerWorkspaces(String userId) {
@@ -315,6 +321,10 @@ public class WorkspaceService {
                 .map(m -> workspaceRepository.findById(m.getWorkspaceId()))
                 .filter(Optional::isPresent)
                 .map(Optional::get)
+                .peek(ws -> {
+                    int count = workspaceMemberRepository.findByWorkspaceId(ws.getId()).size();
+                    ws.setMemberCount(count);
+                })
                 .toList();
     }
 

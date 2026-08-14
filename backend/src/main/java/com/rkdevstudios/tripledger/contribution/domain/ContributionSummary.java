@@ -1,5 +1,6 @@
 package com.rkdevstudios.tripledger.contribution.domain;
 
+import com.rkdevstudios.tripledger.workspace.domain.MemberRole;
 import java.math.BigDecimal;
 
 /**
@@ -10,6 +11,7 @@ public record ContributionSummary(
     String workspaceId,
     String userId,
     String name,
+    MemberRole role,
     BigDecimal plannedContribution,
     BigDecimal cashContributed,
     BigDecimal directExpenseContribution,
@@ -22,6 +24,7 @@ public record ContributionSummary(
             String workspaceId,
             String userId,
             String name,
+            MemberRole role,
             BigDecimal plannedAmount,
             BigDecimal cash,
             BigDecimal directExpense,
@@ -32,7 +35,7 @@ public record ContributionSummary(
         ContributionStatus status = computeStatus(plannedAmount, total);
 
         return new ContributionSummary(
-                workspaceId, userId, name, plannedAmount,
+                workspaceId, userId, name, role, plannedAmount,
                 cash, directExpense, adjustments,
                 total, remaining, status
         );

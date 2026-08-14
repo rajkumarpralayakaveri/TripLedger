@@ -44,6 +44,9 @@ public class Workspace {
     @Column(name = "planned_member_count")
     private Integer plannedMemberCount = 1;
 
+    @Transient
+    private Integer memberCount = 1;
+
     @Column(name = "created_by", nullable = false, length = 36)
     private String createdBy;
 
@@ -177,5 +180,13 @@ public class Workspace {
 
     public void setPlannedMemberCount(Integer plannedMemberCount) {
         this.plannedMemberCount = plannedMemberCount;
+    }
+
+    public Integer getMemberCount() {
+        return memberCount != null ? memberCount : 1;
+    }
+
+    public void setMemberCount(Integer memberCount) {
+        this.memberCount = memberCount;
     }
 }
