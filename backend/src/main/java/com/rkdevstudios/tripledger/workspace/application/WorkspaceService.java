@@ -44,10 +44,11 @@ public class WorkspaceService {
             LocalDate endDate,
             String baseCurrency,
             BigDecimal budget,
+            Integer plannedMemberCount,
             String createdBy
     ) {
         return createWorkspace(
-                name, description, startDate, endDate, baseCurrency, budget, createdBy,
+                name, description, startDate, endDate, baseCurrency, budget, plannedMemberCount, createdBy,
                 ContributionStrategy.EQUAL, null, null
         );
     }
@@ -60,11 +61,16 @@ public class WorkspaceService {
             LocalDate endDate,
             String baseCurrency,
             BigDecimal budget,
+            Integer plannedMemberCount,
             String createdBy,
             ContributionStrategy strategy,
             Map<String, BigDecimal> customAmounts,
             Map<String, BigDecimal> percentages
     ) {
+        if (plannedMemberCount == null || plannedMemberCount < 1) {
+            throw new IllegalArgumentException("Planned member count must be at least 1");
+        }
+
         // Enforce DateRange invariant check via Value Object
         new DateRange(startDate, endDate);
 
@@ -79,6 +85,7 @@ public class WorkspaceService {
                 endDate,
                 baseCurrency,
                 budget,
+                plannedMemberCount,
                 createdBy
         );
         workspace.setStatus(WorkspaceStatus.PLANNING);
@@ -112,6 +119,7 @@ public class WorkspaceService {
             LocalDate startDate,
             LocalDate endDate,
             BigDecimal budget,
+            Integer plannedMemberCount,
             WorkspaceStatus targetStatus,
             String callerUserId
     ) {
@@ -134,9 +142,43 @@ public class WorkspaceService {
             workspace.setStartDate(startDate);
             workspace.setEndDate(endDate);
         }
-        if (budget != null) workspace.setBudget(budget);
 
-        return workspaceRepository.save(workspace);
+        if (plannedMemberCount != null && plannedMemberCount < 1) {
+            throw new IllegalArgumentException("Planned member count must be at least 1");
+        }
+
+        boolean recalculate = false;
+
+        if (budget != null && (workspace.getBudget() == null || budget.compareTo(workspace.getBudget()) != 0)) {
+            workspace.setBudget(budget);
+            recalculate = true;
+        }
+
+        if (plannedMemberCount != null && !plannedMemberCount.equals(workspace.getPlannedMemberCount())) {
+            List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
+            if (plannedMemberCount < members.size()) {
+                throw new IllegalArgumentException("Cannot set planned member count to less than the number of current members (" + members.size() + ")");
+            }
+            workspace.setPlannedMemberCount(plannedMemberCount);
+            recalculate = true;
+        }
+
+        Workspace saved = workspaceRepository.save(workspace);
+
+        if (recalculate) {
+            List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspaceId);
+            List<String> memberIds = members.stream().map(WorkspaceMember::getUserId).toList();
+            contributionService.initializeContributions(
+                    workspaceId,
+                    workspace.getContributionStrategy(),
+                    workspace.getBudget() != null ? workspace.getBudget() : BigDecimal.ZERO,
+                    memberIds,
+                    null,
+                    null
+            );
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -185,6 +227,14 @@ public class WorkspaceService {
             throw new IllegalStateException("Invite token is expired, inactive, or usage limit reached");
         }
 
+        Workspace workspace = workspaceRepository.findById(inviteToken.getWorkspaceId())
+                .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
+
+        List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspace.getId());
+        if (members.size() >= workspace.getPlannedMemberCount()) {
+            throw new IllegalStateException("Workspace has reached its maximum planned member capacity (" + workspace.getPlannedMemberCount() + ")");
+        }
+
         // Check if user is already a member
         Optional<WorkspaceMember> existingOpt = workspaceMemberRepository
                 .findByWorkspaceIdAndUserId(inviteToken.getWorkspaceId(), userId);
@@ -208,19 +258,16 @@ public class WorkspaceService {
         WorkspaceMember savedMember = workspaceMemberRepository.save(newMember);
 
         // Recalculate contributions when a new member joins
-        Workspace workspace = workspaceRepository.findById(inviteToken.getWorkspaceId()).orElse(null);
-        if (workspace != null) {
-            List<WorkspaceMember> members = workspaceMemberRepository.findByWorkspaceId(workspace.getId());
-            List<String> memberIds = members.stream().map(WorkspaceMember::getUserId).toList();
-            contributionService.initializeContributions(
-                    workspace.getId(),
-                    workspace.getContributionStrategy(),
-                    workspace.getBudget() != null ? workspace.getBudget() : BigDecimal.ZERO,
-                    memberIds,
-                    null,
-                    null
-            );
-        }
+        List<WorkspaceMember> updatedMembers = workspaceMemberRepository.findByWorkspaceId(workspace.getId());
+        List<String> memberIds = updatedMembers.stream().map(WorkspaceMember::getUserId).toList();
+        contributionService.initializeContributions(
+                workspace.getId(),
+                workspace.getContributionStrategy(),
+                workspace.getBudget() != null ? workspace.getBudget() : BigDecimal.ZERO,
+                memberIds,
+                null,
+                null
+        );
 
         return savedMember;
     }

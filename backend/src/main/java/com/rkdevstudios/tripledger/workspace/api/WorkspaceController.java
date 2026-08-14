@@ -46,7 +46,11 @@ public class WorkspaceController {
                 request.endDate(),
                 request.baseCurrency(),
                 request.budget(),
-                user.getId()
+                request.plannedMemberCount(),
+                user.getId(),
+                request.contributionStrategy(),
+                request.customAmounts(),
+                request.percentages()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(workspace));
     }
@@ -78,6 +82,7 @@ public class WorkspaceController {
                 request.startDate(),
                 request.endDate(),
                 request.budget(),
+                request.plannedMemberCount(),
                 request.status(),
                 user.getId()
         );

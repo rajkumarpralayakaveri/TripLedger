@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.Min;
+
 public record WorkspaceUpdateRequest(
     @Size(max = 100, message = "Name must not exceed 100 characters")
     String name,
@@ -18,6 +20,9 @@ public record WorkspaceUpdateRequest(
 
     @Positive(message = "Budget must be positive")
     BigDecimal budget,
+
+    @Min(value = 1, message = "Planned member count must be at least 1")
+    Integer plannedMemberCount,
 
     WorkspaceStatus status
 ) {}

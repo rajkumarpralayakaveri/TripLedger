@@ -61,7 +61,7 @@ class ExpenseServiceTest {
         String currency = "INR";
         List<String> participants = Arrays.asList("usr_1", "usr_2");
 
-        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), payerId);
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, payerId);
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
 
         WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.OWNER);
@@ -98,7 +98,7 @@ class ExpenseServiceTest {
         String currency = "USD"; // Mismatched currency (Workspace is INR)
         List<String> participants = Arrays.asList("usr_1", "usr_2");
 
-        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), payerId);
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, payerId);
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
 
         WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.OWNER);
@@ -121,7 +121,7 @@ class ExpenseServiceTest {
         List<String> participants = Arrays.asList("usr_1", "usr_2");
         LocalDate futureDate = LocalDate.now().plusDays(1); // Future Date
 
-        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), payerId);
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, payerId);
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
 
         WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.OWNER);

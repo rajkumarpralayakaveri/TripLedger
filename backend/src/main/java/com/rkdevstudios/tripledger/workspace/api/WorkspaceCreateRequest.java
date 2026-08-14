@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import jakarta.validation.constraints.Min;
 import com.rkdevstudios.tripledger.contribution.domain.ContributionStrategy;
 import java.util.Map;
 
@@ -29,6 +30,10 @@ public record WorkspaceCreateRequest(
 
     @Positive(message = "Budget must be positive")
     BigDecimal budget,
+
+    @NotNull(message = "Planned member count is required")
+    @Min(value = 1, message = "Planned member count must be at least 1")
+    Integer plannedMemberCount,
 
     ContributionStrategy contributionStrategy,
     Map<String, BigDecimal> customAmounts,

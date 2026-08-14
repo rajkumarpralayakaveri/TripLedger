@@ -1,6 +1,8 @@
 package com.rkdevstudios.tripledger.contribution.application;
 
 import com.rkdevstudios.tripledger.contribution.domain.*;
+import com.rkdevstudios.tripledger.workspace.domain.Workspace;
+import com.rkdevstudios.tripledger.workspace.domain.WorkspaceRepository;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceMember;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceMemberRepository;
 import org.springframework.stereotype.Service;
@@ -18,15 +20,18 @@ public class ContributionService {
     private final PlannedContributionRepository plannedContributionRepository;
     private final ContributionEntryRepository contributionEntryRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final WorkspaceRepository workspaceRepository;
 
     public ContributionService(
             PlannedContributionRepository plannedContributionRepository,
             ContributionEntryRepository contributionEntryRepository,
-            WorkspaceMemberRepository workspaceMemberRepository
+            WorkspaceMemberRepository workspaceMemberRepository,
+            WorkspaceRepository workspaceRepository
     ) {
         this.plannedContributionRepository = plannedContributionRepository;
         this.contributionEntryRepository = contributionEntryRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
+        this.workspaceRepository = workspaceRepository;
     }
 
     @Transactional
@@ -42,14 +47,30 @@ public class ContributionService {
             return;
         }
 
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
+        int plannedCount = workspace.getPlannedMemberCount() != null ? workspace.getPlannedMemberCount() : 1;
+
         // Validate strategy constraints
         Map<String, BigDecimal> calculatedPlanned = new HashMap<>();
 
         if (strategy == ContributionStrategy.EQUAL) {
-            BigDecimal size = BigDecimal.valueOf(memberIds.size());
-            BigDecimal equalShare = budget.divide(size, 4, RoundingMode.HALF_UP);
-            for (String userId : memberIds) {
-                calculatedPlanned.put(userId, equalShare);
+            BigDecimal size = BigDecimal.valueOf(plannedCount);
+            BigDecimal baseShare = budget.divide(size, 4, RoundingMode.DOWN);
+            BigDecimal totalAllocatedBase = baseShare.multiply(size);
+            BigDecimal remainder = budget.subtract(totalAllocatedBase);
+            int remainderUnits = remainder.divide(BigDecimal.valueOf(0.0001), 0, RoundingMode.HALF_UP).intValue();
+
+            List<String> sortedMemberIds = new java.util.ArrayList<>(memberIds);
+            java.util.Collections.sort(sortedMemberIds);
+
+            for (int i = 0; i < sortedMemberIds.size(); i++) {
+                String userId = sortedMemberIds.get(i);
+                BigDecimal amount = baseShare;
+                if (i < remainderUnits) {
+                    amount = amount.add(BigDecimal.valueOf(0.0001));
+                }
+                calculatedPlanned.put(userId, amount);
             }
         } else if (strategy == ContributionStrategy.PERCENTAGE) {
             BigDecimal totalPercentage = BigDecimal.ZERO;

@@ -41,6 +41,9 @@ public class Workspace {
     @Column(name = "contribution_strategy", nullable = false, length = 20)
     private ContributionStrategy contributionStrategy = ContributionStrategy.EQUAL;
 
+    @Column(name = "planned_member_count", nullable = false)
+    private Integer plannedMemberCount = 1;
+
     @Column(name = "created_by", nullable = false, length = 36)
     private String createdBy;
 
@@ -55,7 +58,7 @@ public class Workspace {
     }
 
     public Workspace(String id, String name, String description, LocalDate startDate, LocalDate endDate,
-                     String baseCurrency, BigDecimal budget, String createdBy) {
+                     String baseCurrency, BigDecimal budget, Integer plannedMemberCount, String createdBy) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -63,6 +66,7 @@ public class Workspace {
         this.endDate = endDate;
         this.baseCurrency = baseCurrency;
         this.budget = budget;
+        this.plannedMemberCount = plannedMemberCount != null ? plannedMemberCount : 1;
         this.createdBy = createdBy;
     }
 
@@ -165,5 +169,13 @@ public class Workspace {
 
     public void setContributionStrategy(ContributionStrategy contributionStrategy) {
         this.contributionStrategy = contributionStrategy;
+    }
+
+    public Integer getPlannedMemberCount() {
+        return plannedMemberCount;
+    }
+
+    public void setPlannedMemberCount(Integer plannedMemberCount) {
+        this.plannedMemberCount = plannedMemberCount;
     }
 }
