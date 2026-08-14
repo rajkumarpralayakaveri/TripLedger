@@ -34,6 +34,7 @@ data class MockWorkspace(
 data class MockContributionSummary(
     val userId: String,
     val name: String,
+    val role: String,
     val planned: BigDecimal,
     val total: BigDecimal,
     val remaining: BigDecimal,

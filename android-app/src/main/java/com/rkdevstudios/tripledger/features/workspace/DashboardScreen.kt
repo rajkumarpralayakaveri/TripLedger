@@ -64,7 +64,7 @@ fun DashboardScreen(
                                 style = MaterialTheme.typography.labelMedium
                             )
                             Text(
-                                text = "Members: ${ws.membersCount}",
+                                text = "Members: ${ws.membersCount} Joined / ${ws.plannedMemberCount} Expected",
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }

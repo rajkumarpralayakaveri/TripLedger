@@ -74,6 +74,7 @@ data class WorkspaceDto(
     val baseCurrency: String,
     val budget: BigDecimal?,
     val plannedMemberCount: Int,
+    val memberCount: Int,
     val status: String,
     val contributionStrategy: String
 )
@@ -95,6 +96,7 @@ data class WorkspaceFinancialSnapshotDto(
 data class ContributionSummaryDto(
     val userId: String,
     val name: String,
+    val role: String,
     val planned: BigDecimal,
     val total: BigDecimal,
     val remaining: BigDecimal,

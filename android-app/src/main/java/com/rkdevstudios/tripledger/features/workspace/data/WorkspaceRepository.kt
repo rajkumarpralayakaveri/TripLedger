@@ -23,7 +23,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         budget = dto.budget,
                         plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
-                        membersCount = 1 // Simplified placeholder, actual members fetched in detail snapshot
+                        membersCount = dto.memberCount
                     )
                 }
                 Result.success(list)
@@ -44,6 +44,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                     MockContributionSummary(
                         userId = c.userId,
                         name = c.name,
+                        role = c.role,
                         planned = c.planned,
                         total = c.total,
                         remaining = c.remaining,
@@ -131,7 +132,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         budget = dto.budget,
                         plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
-                        membersCount = 1
+                        membersCount = dto.memberCount
                     )
                 )
             } else {
