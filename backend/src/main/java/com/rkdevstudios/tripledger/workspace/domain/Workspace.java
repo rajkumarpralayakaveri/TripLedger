@@ -41,7 +41,7 @@ public class Workspace {
     @Column(name = "contribution_strategy", nullable = false, length = 20)
     private ContributionStrategy contributionStrategy = ContributionStrategy.EQUAL;
 
-    @Column(name = "planned_member_count", nullable = false)
+    @Column(name = "planned_member_count")
     private Integer plannedMemberCount = 1;
 
     @Column(name = "created_by", nullable = false, length = 36)
@@ -172,7 +172,7 @@ public class Workspace {
     }
 
     public Integer getPlannedMemberCount() {
-        return plannedMemberCount;
+        return plannedMemberCount != null ? plannedMemberCount : 1;
     }
 
     public void setPlannedMemberCount(Integer plannedMemberCount) {
