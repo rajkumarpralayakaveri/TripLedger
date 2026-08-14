@@ -56,6 +56,26 @@ class AuthViewModel(
         }
     }
 
+    fun registerWithEmail(name: String, email: String, authCode: String) {
+        viewModelScope.launch {
+            _authState.value = AuthState.Loading
+            val result = authRepository.register(name, email, authCode)
+            result.fold(
+                onSuccess = {
+                    val session = sessionStore.getSession()
+                    if (session != null) {
+                        _authState.value = AuthState.Authenticated(session)
+                    } else {
+                        _authState.value = AuthState.Error("Session failed to save")
+                    }
+                },
+                onFailure = { error ->
+                    _authState.value = AuthState.Error(error.message ?: "Registration failed")
+                }
+            )
+        }
+    }
+
     fun loginWithGoogle(idToken: String) {
         // Fallback or not implemented for Google login on backend yet
         _authState.value = AuthState.Error("Google Login is not supported in this release")

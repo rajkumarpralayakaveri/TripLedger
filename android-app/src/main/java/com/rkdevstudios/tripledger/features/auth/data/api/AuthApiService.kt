@@ -9,9 +9,25 @@ interface AuthApiService {
     @POST("api/v1/auth/login")
     suspend fun login(@Body request: LoginRequestDto): NetworkResponse<LoginResponseDto>
 
+    @POST("api/v1/auth/register")
+    suspend fun register(@Body request: RegisterRequestDto): NetworkResponse<RegisterResponseDto>
+
     @POST("api/v1/auth/logout")
     suspend fun logout(@Body request: LogoutRequestDto): NetworkResponse<Void>
 }
+
+data class RegisterRequestDto(
+    val name: String,
+    val email: String,
+    val password: String,
+    val avatarUrl: String? = null
+)
+
+data class RegisterResponseDto(
+    val id: String,
+    val name: String,
+    val email: String
+)
 
 data class LoginRequestDto(
     val email: String,

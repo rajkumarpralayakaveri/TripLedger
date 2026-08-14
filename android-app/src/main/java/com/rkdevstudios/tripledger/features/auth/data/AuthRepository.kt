@@ -43,4 +43,18 @@ class AuthRepository(
         }
         return Result.success(Unit)
     }
+
+    suspend fun register(name: String, email: String, password: String): Result<Unit> {
+        return try {
+            val response = authApiService.register(com.rkdevstudios.tripledger.features.auth.data.api.RegisterRequestDto(name, email, password))
+            if (response.success && response.data != null) {
+                login(email, password)
+            } else {
+                val errMsg = response.error?.message ?: "Registration failed"
+                Result.failure(Exception(errMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

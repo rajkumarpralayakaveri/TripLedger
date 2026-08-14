@@ -1,5 +1,6 @@
 package com.rkdevstudios.tripledger.features.auth
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +30,8 @@ fun LoginScreen(
     onNavigateToDashboard: () -> Unit
 ) {
     val authState by viewModel.authState.collectAsState()
+    var isRegisterMode by remember { mutableStateOf(false) }
+    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
@@ -46,12 +49,21 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Welcome to TripLedger",
+            text = if (isRegisterMode) "Create Account" else "Welcome to TripLedger",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(modifier = Modifier.height(TripSpacing.L))
+
+        if (isRegisterMode) {
+            TripTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = "Full Name"
+            )
+            Spacer(modifier = Modifier.height(TripSpacing.S))
+        }
 
         TripTextField(
             value = email,
@@ -73,15 +85,34 @@ fun LoginScreen(
             TripLoadingIndicator()
         } else {
             TripButton(
-                text = "Log In",
-                onClick = { viewModel.loginWithEmail(email, password) }
+                text = if (isRegisterMode) "Register" else "Log In",
+                onClick = {
+                    if (isRegisterMode) {
+                        viewModel.registerWithEmail(name, email, password)
+                    } else {
+                        viewModel.loginWithEmail(email, password)
+                    }
+                }
             )
 
-            Spacer(modifier = Modifier.height(TripSpacing.S))
+            if (!isRegisterMode) {
+                Spacer(modifier = Modifier.height(TripSpacing.S))
 
-            TripButton(
-                text = "Sign In with Google",
-                onClick = { viewModel.loginWithGoogle("mock_google_token") }
+                TripButton(
+                    text = "Sign In with Google",
+                    onClick = { viewModel.loginWithGoogle("mock_google_token") }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(TripSpacing.M))
+
+            Text(
+                text = if (isRegisterMode) "Already have an account? Log In" else "Don't have an account? Sign Up",
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier
+                    .clickable { isRegisterMode = !isRegisterMode }
+                    .padding(TripSpacing.S)
             )
         }
 
