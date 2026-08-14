@@ -1,5 +1,6 @@
 package com.rkdevstudios.tripledger.features.workspace.data.api
 
+import com.google.gson.annotations.SerializedName
 import com.rkdevstudios.tripledger.core.network.NetworkResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -97,8 +98,8 @@ data class ContributionSummaryDto(
     val userId: String,
     val name: String,
     val role: String,
-    val planned: BigDecimal,
-    val total: BigDecimal,
-    val remaining: BigDecimal,
+    @SerializedName("plannedContribution") val planned: BigDecimal,
+    @SerializedName("totalContribution") val total: BigDecimal,
+    @SerializedName("remainingContribution") val remaining: BigDecimal,
     val status: String
 )
