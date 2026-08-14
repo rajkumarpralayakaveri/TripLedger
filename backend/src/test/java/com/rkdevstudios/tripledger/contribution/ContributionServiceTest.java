@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import com.rkdevstudios.tripledger.identity.domain.User;
+import com.rkdevstudios.tripledger.identity.domain.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.*;
@@ -25,6 +27,7 @@ class ContributionServiceTest {
     private ContributionEntryRepository contributionEntryRepository;
     private WorkspaceMemberRepository workspaceMemberRepository;
     private WorkspaceRepository workspaceRepository;
+    private UserRepository userRepository;
     private ContributionService contributionService;
 
     @BeforeEach
@@ -33,11 +36,13 @@ class ContributionServiceTest {
         contributionEntryRepository = mock(ContributionEntryRepository.class);
         workspaceMemberRepository = mock(WorkspaceMemberRepository.class);
         workspaceRepository = mock(WorkspaceRepository.class);
+        userRepository = mock(UserRepository.class);
         contributionService = new ContributionService(
                 plannedContributionRepository,
                 contributionEntryRepository,
                 workspaceMemberRepository,
-                workspaceRepository
+                workspaceRepository,
+                userRepository
         );
     }
 
@@ -177,6 +182,11 @@ class ContributionServiceTest {
         WorkspaceMember m2 = new WorkspaceMember(workspaceId, "usr_2", MemberRole.MEMBER);
         when(workspaceMemberRepository.findByWorkspaceId(workspaceId)).thenReturn(Arrays.asList(m1, m2));
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_1")).thenReturn(Optional.of(m1));
+
+        User user1 = new User("usr_1", "Raj", "raj@test.com", "pass", null);
+        User user2 = new User("usr_2", "Rahul", "rahul@test.com", "pass", null);
+        when(userRepository.findById("usr_1")).thenReturn(Optional.of(user1));
+        when(userRepository.findById("usr_2")).thenReturn(Optional.of(user2));
 
         PlannedContribution p1 = new PlannedContribution("pc_1", workspaceId, "usr_1", BigDecimal.valueOf(25000));
         PlannedContribution p2 = new PlannedContribution("pc_2", workspaceId, "usr_2", BigDecimal.valueOf(25000));

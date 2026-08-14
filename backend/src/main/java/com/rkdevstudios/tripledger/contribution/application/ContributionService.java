@@ -1,6 +1,8 @@
 package com.rkdevstudios.tripledger.contribution.application;
 
 import com.rkdevstudios.tripledger.contribution.domain.*;
+import com.rkdevstudios.tripledger.identity.domain.User;
+import com.rkdevstudios.tripledger.identity.domain.UserRepository;
 import com.rkdevstudios.tripledger.workspace.domain.Workspace;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceRepository;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceMember;
@@ -21,17 +23,20 @@ public class ContributionService {
     private final ContributionEntryRepository contributionEntryRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final WorkspaceRepository workspaceRepository;
+    private final UserRepository userRepository;
 
     public ContributionService(
             PlannedContributionRepository plannedContributionRepository,
             ContributionEntryRepository contributionEntryRepository,
             WorkspaceMemberRepository workspaceMemberRepository,
-            WorkspaceRepository workspaceRepository
+            WorkspaceRepository workspaceRepository,
+            UserRepository userRepository
     ) {
         this.plannedContributionRepository = plannedContributionRepository;
         this.contributionEntryRepository = contributionEntryRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.workspaceRepository = workspaceRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
@@ -209,9 +214,14 @@ public class ContributionService {
             }
         }
 
+        String name = userRepository.findById(userId)
+                .map(User::getName)
+                .orElse("Unknown Member");
+
         return ContributionSummary.compute(
                 workspaceId,
                 userId,
+                name,
                 planned.getPlannedAmount(),
                 cash,
                 directExpense,

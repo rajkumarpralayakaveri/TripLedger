@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 public record ContributionSummary(
     String workspaceId,
     String userId,
+    String name,
     BigDecimal plannedContribution,
     BigDecimal cashContributed,
     BigDecimal directExpenseContribution,
@@ -20,6 +21,7 @@ public record ContributionSummary(
     public static ContributionSummary compute(
             String workspaceId,
             String userId,
+            String name,
             BigDecimal plannedAmount,
             BigDecimal cash,
             BigDecimal directExpense,
@@ -30,7 +32,7 @@ public record ContributionSummary(
         ContributionStatus status = computeStatus(plannedAmount, total);
 
         return new ContributionSummary(
-                workspaceId, userId, plannedAmount,
+                workspaceId, userId, name, plannedAmount,
                 cash, directExpense, adjustments,
                 total, remaining, status
         );
