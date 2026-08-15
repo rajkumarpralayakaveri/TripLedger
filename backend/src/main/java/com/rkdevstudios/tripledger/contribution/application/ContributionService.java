@@ -296,4 +296,26 @@ public class ContributionService {
         workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseThrow(() -> new SecurityException("User is not a member of this workspace"));
     }
+
+    @Transactional
+    public ContributionEntry recordVerifiedCashContribution(
+            String workspaceId,
+            String userId,
+            BigDecimal amount,
+            String referenceId,
+            String verifierId
+    ) {
+        verifyAuthorized(workspaceId, verifierId);
+
+        ContributionEntry entry = new ContributionEntry(
+                UUID.randomUUID().toString(),
+                workspaceId,
+                userId,
+                ContributionEntryType.CASH,
+                amount,
+                "Verified payment proof: " + referenceId,
+                referenceId
+        );
+        return contributionEntryRepository.save(entry);
+    }
 }

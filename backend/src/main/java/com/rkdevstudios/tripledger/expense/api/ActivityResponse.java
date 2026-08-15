@@ -22,6 +22,9 @@ public record ActivityResponse(
             case MEMBER_JOINED -> userName + " joined workspace";
             case WORKSPACE_CREATED -> userName + " created workspace";
             case SETTLEMENT_CONFIRMED -> userName + " paid " + (descriptionDetail != null ? descriptionDetail : "a settlement repayment");
+            case PAYMENT_SUBMITTED -> userName + " submitted a payment proof" + (descriptionDetail != null ? " of " + descriptionDetail : "");
+            case PAYMENT_APPROVED -> userName + "'s payment" + (descriptionDetail != null ? " of " + descriptionDetail : "") + " was approved";
+            case PAYMENT_REJECTED -> userName + "'s payment was rejected";
         };
 
         return new ActivityResponse(
