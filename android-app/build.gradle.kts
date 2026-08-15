@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.okhttp.logging)
+    implementation("io.coil-kt:coil-compose:2.7.0")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)

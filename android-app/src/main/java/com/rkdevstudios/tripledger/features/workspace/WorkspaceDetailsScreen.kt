@@ -31,10 +31,13 @@ import java.math.RoundingMode
 fun WorkspaceDetailsScreen(
     workspaceId: String,
     viewModel: WorkspaceViewModel,
+    currentUserId: String,
     onNavigateBack: () -> Unit,
     onInviteMembers: (String) -> Unit,
     onNavigateToExpenses: (String) -> Unit,
-    onNavigateToSettlements: (String) -> Unit
+    onNavigateToSettlements: (String) -> Unit,
+    onNavigateToSubmission: (String) -> Unit,
+    onNavigateToVerification: (String) -> Unit
 ) {
     LaunchedEffect(workspaceId) {
         viewModel.selectWorkspace(workspaceId)
@@ -257,6 +260,8 @@ fun WorkspaceDetailsScreen(
                 )
             }
 
+            val currentUserRole = snapshot?.contributions?.find { it.userId == currentUserId }?.role ?: "MEMBER"
+
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(TripSpacing.S)
@@ -289,6 +294,19 @@ fun WorkspaceDetailsScreen(
                         text = "Settle",
                         onClick = { onNavigateToSettlements(ws.id) },
                         modifier = Modifier.weight(1f)
+                    )
+                }
+                if (currentUserRole == "OWNER" || currentUserRole == "ADMIN") {
+                    TripButton(
+                        text = "Verify Payments",
+                        onClick = { onNavigateToVerification(ws.id) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    TripButton(
+                        text = "Submit Receipt / Proof",
+                        onClick = { onNavigateToSubmission(ws.id) },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

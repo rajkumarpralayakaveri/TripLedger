@@ -31,6 +31,36 @@ interface WorkspaceApiService {
     suspend fun createWorkspace(
         @retrofit2.http.Body request: WorkspaceCreateRequestDto
     ): NetworkResponse<WorkspaceDto>
+
+    @retrofit2.http.POST("api/v1/workspaces/{id}/payments/signature")
+    suspend fun getUploadSignature(
+        @Path("id") workspaceId: String,
+        @retrofit2.http.Body request: PaymentSignatureRequest
+    ): NetworkResponse<PaymentSignatureResponse>
+
+    @retrofit2.http.POST("api/v1/workspaces/{id}/payments/complete")
+    suspend fun completeUpload(
+        @Path("id") workspaceId: String,
+        @retrofit2.http.Body request: PaymentCompletionRequest
+    ): NetworkResponse<PaymentProofResponseDto>
+
+    @GET("api/v1/workspaces/{id}/payments")
+    suspend fun getPayments(
+        @Path("id") workspaceId: String
+    ): NetworkResponse<List<PaymentProofResponseDto>>
+
+    @retrofit2.http.POST("api/v1/workspaces/{id}/payments/{paymentId}/approve")
+    suspend fun approvePayment(
+        @Path("id") workspaceId: String,
+        @Path("paymentId") paymentId: String
+    ): NetworkResponse<PaymentProofResponseDto>
+
+    @retrofit2.http.POST("api/v1/workspaces/{id}/payments/{paymentId}/reject")
+    suspend fun rejectPayment(
+        @Path("id") workspaceId: String,
+        @Path("paymentId") paymentId: String,
+        @retrofit2.http.Body request: PaymentRejectionRequest
+    ): NetworkResponse<PaymentProofResponseDto>
 }
 
 data class WorkspaceCreateRequestDto(
@@ -102,4 +132,59 @@ data class ContributionSummaryDto(
     @SerializedName("totalContribution") val total: BigDecimal,
     @SerializedName("remainingContribution") val remaining: BigDecimal,
     val status: String
+)
+
+data class PaymentSignatureRequest(
+    val amount: BigDecimal
+)
+
+data class PaymentSignatureResponse(
+    val paymentId: String,
+    val publicId: String,
+    val signature: String,
+    val timestamp: Long,
+    val apiKey: String,
+    val cloudName: String
+)
+
+data class PaymentCompletionRequest(
+    val paymentId: String,
+    val publicId: String
+)
+
+data class PaymentRejectionRequest(
+    val reason: String
+)
+
+data class PaymentProofResponseDto(
+    val id: String,
+    val workspaceId: String,
+    val userId: String,
+    val payerName: String,
+    val amount: BigDecimal,
+    val status: String,
+    val createdAt: String,
+    val submittedAt: String?,
+    val verifiedAt: String?,
+    val verifiedBy: String?,
+    val rejectionReason: String?,
+    val viewUrl: String?
+)
+
+interface CloudinaryApiService {
+    @retrofit2.http.Multipart
+    @retrofit2.http.POST
+    suspend fun uploadImage(
+        @retrofit2.http.Url url: String,
+        @retrofit2.http.Part file: okhttp3.MultipartBody.Part,
+        @retrofit2.http.Part("api_key") apiKey: okhttp3.RequestBody,
+        @retrofit2.http.Part("timestamp") timestamp: okhttp3.RequestBody,
+        @retrofit2.http.Part("signature") signature: okhttp3.RequestBody,
+        @retrofit2.http.Part("public_id") publicId: okhttp3.RequestBody
+    ): retrofit2.Response<CloudinaryUploadResponseDto>
+}
+
+data class CloudinaryUploadResponseDto(
+    val public_id: String,
+    val secure_url: String
 )

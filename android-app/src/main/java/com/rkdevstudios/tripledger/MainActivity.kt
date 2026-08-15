@@ -24,8 +24,12 @@ import com.rkdevstudios.tripledger.features.workspace.DashboardScreen
 import com.rkdevstudios.tripledger.features.workspace.InviteMembersScreen
 import com.rkdevstudios.tripledger.features.workspace.JoinWorkspaceScreen
 import com.rkdevstudios.tripledger.features.workspace.WorkspaceDetailsScreen
+import com.rkdevstudios.tripledger.features.workspace.PaymentSubmissionScreen
+import com.rkdevstudios.tripledger.features.workspace.PaymentVerificationScreen
 import com.rkdevstudios.tripledger.features.workspace.WorkspaceViewModel
 import com.rkdevstudios.tripledger.features.workspace.data.WorkspaceRepository
+import com.rkdevstudios.tripledger.features.workspace.data.PaymentProofRepository
+import com.rkdevstudios.tripledger.features.workspace.PaymentProofViewModel
 import com.rkdevstudios.tripledger.features.workspace.data.api.WorkspaceApiService
 import com.rkdevstudios.tripledger.features.expense.presentation.ExpenseTimelineScreen
 import com.rkdevstudios.tripledger.features.expense.presentation.AddEditExpenseScreen
@@ -47,10 +51,12 @@ class MainActivity : ComponentActivity() {
         
         val workspaceApiService = retrofitClient.createService<WorkspaceApiService>()
         val workspaceRepository = WorkspaceRepository(workspaceApiService)
+        val paymentProofRepository = PaymentProofRepository(workspaceApiService)
         
-        val factory = ViewModelFactory(sessionStore, sessionManager, authRepository, workspaceRepository)
+        val factory = ViewModelFactory(sessionStore, sessionManager, authRepository, workspaceRepository, paymentProofRepository)
         val authViewModel = ViewModelProvider(this, factory)[AuthViewModel::class.java]
         val workspaceViewModel = ViewModelProvider(this, factory)[WorkspaceViewModel::class.java]
+        val paymentProofViewModel = ViewModelProvider(this, factory)[PaymentProofViewModel::class.java]
 
         setContent {
             TripLedgerTheme {
@@ -107,13 +113,45 @@ class MainActivity : ComponentActivity() {
                         arguments = listOf(navArgument("id") { type = NavType.StringType })
                     ) { backStackEntry ->
                         val workspaceId = backStackEntry.arguments?.getString("id").orEmpty()
+                        val currentUserId = sessionStore.getSession()?.userId.orEmpty()
                         WorkspaceDetailsScreen(
                             workspaceId = workspaceId,
                             viewModel = workspaceViewModel,
+                            currentUserId = currentUserId,
                             onNavigateBack = { navController.navigateUp() },
                             onInviteMembers = { id -> navController.navigate("invite-members/$id") },
                             onNavigateToExpenses = { id -> navController.navigate("expense-timeline/$id") },
-                            onNavigateToSettlements = { id -> navController.navigate("balances/$id") }
+                            onNavigateToSettlements = { id -> navController.navigate("balances/$id") },
+                            onNavigateToSubmission = { id -> navController.navigate("payment-submission/$id") },
+                            onNavigateToVerification = { id -> navController.navigate("payment-verification/$id") }
+                        )
+                    }
+
+                    composable(
+                        route = "payment-submission/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val workspaceId = backStackEntry.arguments?.getString("id").orEmpty()
+                        val currentUserId = sessionStore.getSession()?.userId.orEmpty()
+                        PaymentSubmissionScreen(
+                            workspaceId = workspaceId,
+                            viewModel = paymentProofViewModel,
+                            currentUserId = currentUserId,
+                            onNavigateBack = { navController.navigateUp() }
+                        )
+                    }
+
+                    composable(
+                        route = "payment-verification/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val workspaceId = backStackEntry.arguments?.getString("id").orEmpty()
+                        val currentUserId = sessionStore.getSession()?.userId.orEmpty()
+                        PaymentVerificationScreen(
+                            workspaceId = workspaceId,
+                            viewModel = paymentProofViewModel,
+                            verifierId = currentUserId,
+                            onNavigateBack = { navController.navigateUp() }
                         )
                     }
                     composable(

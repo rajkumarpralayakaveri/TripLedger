@@ -9,8 +9,8 @@ class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor 
         val request = chain.request()
         val path = request.url.encodedPath
 
-        // Skip adding token for public auth endpoints
-        if (path.contains("/auth/login") || path.contains("/auth/register") || path.contains("/auth/refresh")) {
+        // Skip adding token for public auth endpoints or external APIs like Cloudinary
+        if (path.contains("/auth/login") || path.contains("/auth/register") || path.contains("/auth/refresh") || request.url.host.contains("cloudinary.com")) {
             return chain.proceed(request)
         }
 
