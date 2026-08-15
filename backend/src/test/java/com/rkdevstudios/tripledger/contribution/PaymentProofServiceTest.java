@@ -37,6 +37,10 @@ class PaymentProofServiceTest {
         contributionService = mock(ContributionService.class);
         workspaceMemberRepository = mock(WorkspaceMemberRepository.class);
         activityEntryRepository = mock(ActivityEntryRepository.class);
+        
+        when(paymentProofRepository.save(any(PaymentProof.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+                
         paymentProofService = new PaymentProofService(
                 paymentProofRepository,
                 storageService,
@@ -232,5 +236,31 @@ class PaymentProofServiceTest {
 
         verify(storageService).deleteAsset("path_1");
         verify(paymentProofRepository).delete(proof1);
+    }
+
+    @Test
+    void testConcurrentApprovalIdempotency() {
+        String workspaceId = "ws_1";
+        String paymentId = "proof_1";
+        String verifierId = "usr_admin";
+
+        WorkspaceMember verifier = new WorkspaceMember(workspaceId, verifierId, MemberRole.ADMIN);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, verifierId))
+                .thenReturn(Optional.of(verifier));
+
+        PaymentProof proof = new PaymentProof(paymentId, workspaceId, "usr_member", BigDecimal.valueOf(5000), "path_to_proof");
+        proof.setStatus(PaymentProofStatus.PENDING);
+
+        when(paymentProofRepository.findByIdWithLock(paymentId)).thenReturn(Optional.of(proof));
+
+        PaymentProof approvedProof = paymentProofService.approvePayment(workspaceId, paymentId, verifierId);
+        assertEquals(PaymentProofStatus.APPROVED, approvedProof.getStatus());
+        verify(contributionService, times(1)).recordVerifiedCashContribution(any(), any(), any(), any(), any());
+
+        proof.setStatus(PaymentProofStatus.APPROVED);
+        PaymentProof secondApprovedProof = paymentProofService.approvePayment(workspaceId, paymentId, verifierId);
+        
+        assertEquals(PaymentProofStatus.APPROVED, secondApprovedProof.getStatus());
+        verify(contributionService, times(1)).recordVerifiedCashContribution(any(), any(), any(), any(), any());
     }
 }
