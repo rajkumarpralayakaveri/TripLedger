@@ -31,6 +31,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                 Result.failure(Exception(response.error?.message ?: "Failed to load workspaces"))
             }
         } catch (e: Exception) {
+            android.util.Log.e("WorkspaceRepository", "getWorkspaces request failed", e)
             Result.failure(e)
         }
     }
