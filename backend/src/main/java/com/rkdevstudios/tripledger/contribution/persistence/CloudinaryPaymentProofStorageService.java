@@ -27,10 +27,10 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
         this.apiKey = apiKey;
         this.apiSecret = apiSecret;
         
-        System.out.println("Cloudinary Config Loaded: " +
-                "cloudName=" + (cloudName != null ? cloudName.length() : "NULL") + " chars, " +
-                "apiKey=" + (apiKey != null ? apiKey.length() : "NULL") + " chars, " +
-                "apiSecret=" + (apiSecret != null ? apiSecret.length() : "NULL") + " chars");
+        System.out.println("Cloudinary Config Loaded Check: " +
+                "cloudName=" + (cloudName != null && !cloudName.trim().isEmpty() ? "PRESENT" : "MISSING") + ", " +
+                "apiKey=" + (apiKey != null && !apiKey.trim().isEmpty() ? "PRESENT" : "MISSING") + ", " +
+                "apiSecret=" + (apiSecret != null && !apiSecret.trim().isEmpty() ? "PRESENT" : "MISSING"));
 
         Map<String, String> config = new HashMap<>();
         config.put("cloud_name", cloudName);
