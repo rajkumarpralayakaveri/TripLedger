@@ -73,7 +73,10 @@ public class PaymentProofService {
         paymentProofRepository.save(proof);
 
         long timestamp = Instant.now().getEpochSecond();
-        return storageService.generateUploadSignature(publicId, timestamp);
+        Map<String, Object> signatureData = storageService.generateUploadSignature(publicId, timestamp);
+        Map<String, Object> result = new HashMap<>(signatureData);
+        result.put("paymentId", paymentId);
+        return result;
     }
 
     @Transactional
