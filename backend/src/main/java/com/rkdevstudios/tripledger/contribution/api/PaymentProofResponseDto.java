@@ -8,6 +8,7 @@ public record PaymentProofResponseDto(
     String id,
     String workspaceId,
     String userId,
+    String payerName,
     BigDecimal amount,
     PaymentProofStatus status,
     Instant createdAt,

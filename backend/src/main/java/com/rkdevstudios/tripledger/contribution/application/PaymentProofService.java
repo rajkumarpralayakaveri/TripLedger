@@ -4,6 +4,8 @@ import com.rkdevstudios.tripledger.contribution.domain.*;
 import com.rkdevstudios.tripledger.expense.domain.ActivityEntry;
 import com.rkdevstudios.tripledger.expense.domain.ActivityEntryRepository;
 import com.rkdevstudios.tripledger.expense.domain.ActivityType;
+import com.rkdevstudios.tripledger.identity.domain.User;
+import com.rkdevstudios.tripledger.identity.domain.UserRepository;
 import com.rkdevstudios.tripledger.workspace.domain.MemberRole;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceMember;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceMemberRepository;
@@ -25,19 +27,22 @@ public class PaymentProofService {
     private final ContributionService contributionService;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final ActivityEntryRepository activityEntryRepository;
+    private final UserRepository userRepository;
 
     public PaymentProofService(
             PaymentProofRepository paymentProofRepository,
             PaymentProofStorageService storageService,
             ContributionService contributionService,
             WorkspaceMemberRepository workspaceMemberRepository,
-            ActivityEntryRepository activityEntryRepository
+            ActivityEntryRepository activityEntryRepository,
+            UserRepository userRepository
     ) {
         this.paymentProofRepository = paymentProofRepository;
         this.storageService = storageService;
         this.contributionService = contributionService;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.activityEntryRepository = activityEntryRepository;
+        this.userRepository = userRepository;
     }
 
     private void verifyMember(String workspaceId, String userId) {
@@ -80,6 +85,10 @@ public class PaymentProofService {
 
         if (!proof.getWorkspaceId().equals(workspaceId)) {
             throw new IllegalArgumentException("Payment proof does not belong to this workspace");
+        }
+
+        if (!proof.getUserId().equals(userId)) {
+            throw new SecurityException("Authenticated caller does not own this payment proof");
         }
 
         if (proof.getStatus() != PaymentProofStatus.UPLOAD_IN_PROGRESS) {
@@ -144,6 +153,10 @@ public class PaymentProofService {
             map.put("id", p.getId());
             map.put("workspaceId", p.getWorkspaceId());
             map.put("userId", p.getUserId());
+            String payerName = userRepository.findById(p.getUserId())
+                    .map(User::getName)
+                    .orElse("Someone");
+            map.put("payerName", payerName);
             map.put("amount", p.getAmount());
             map.put("status", p.getStatus());
             map.put("createdAt", p.getCreatedAt());

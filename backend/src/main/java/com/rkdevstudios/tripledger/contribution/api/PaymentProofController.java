@@ -6,6 +6,7 @@ import com.rkdevstudios.tripledger.contribution.application.PaymentProofService;
 import com.rkdevstudios.tripledger.contribution.domain.PaymentProof;
 import com.rkdevstudios.tripledger.contribution.domain.PaymentProofStatus;
 import com.rkdevstudios.tripledger.identity.domain.User;
+import com.rkdevstudios.tripledger.identity.domain.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,9 +24,11 @@ import java.util.Map;
 public class PaymentProofController {
 
     private final PaymentProofService paymentProofService;
+    private final UserRepository userRepository;
 
-    public PaymentProofController(PaymentProofService paymentProofService) {
+    public PaymentProofController(PaymentProofService paymentProofService, UserRepository userRepository) {
         this.paymentProofService = paymentProofService;
+        this.userRepository = userRepository;
     }
 
     private User getAuthenticatedUser() {
@@ -73,10 +76,15 @@ public class PaymentProofController {
                 user.getId()
         );
 
+        String payerName = userRepository.findById(proof.getUserId())
+                .map(User::getName)
+                .orElse("Someone");
+
         PaymentProofResponseDto response = new PaymentProofResponseDto(
                 proof.getId(),
                 proof.getWorkspaceId(),
                 proof.getUserId(),
+                payerName,
                 proof.getAmount(),
                 proof.getStatus(),
                 proof.getCreatedAt(),
@@ -103,6 +111,7 @@ public class PaymentProofController {
                     (String) map.get("id"),
                     (String) map.get("workspaceId"),
                     (String) map.get("userId"),
+                    (String) map.get("payerName"),
                     (BigDecimal) map.get("amount"),
                     (PaymentProofStatus) map.get("status"),
                     (Instant) map.get("createdAt"),
@@ -125,10 +134,15 @@ public class PaymentProofController {
         User verifier = getAuthenticatedUser();
         PaymentProof proof = paymentProofService.approvePayment(workspaceId, paymentId, verifier.getId());
 
+        String payerName = userRepository.findById(proof.getUserId())
+                .map(User::getName)
+                .orElse("Someone");
+
         PaymentProofResponseDto response = new PaymentProofResponseDto(
                 proof.getId(),
                 proof.getWorkspaceId(),
                 proof.getUserId(),
+                payerName,
                 proof.getAmount(),
                 proof.getStatus(),
                 proof.getCreatedAt(),
@@ -151,10 +165,15 @@ public class PaymentProofController {
         User verifier = getAuthenticatedUser();
         PaymentProof proof = paymentProofService.rejectPayment(workspaceId, paymentId, request.reason(), verifier.getId());
 
+        String payerName = userRepository.findById(proof.getUserId())
+                .map(User::getName)
+                .orElse("Someone");
+
         PaymentProofResponseDto response = new PaymentProofResponseDto(
                 proof.getId(),
                 proof.getWorkspaceId(),
                 proof.getUserId(),
+                payerName,
                 proof.getAmount(),
                 proof.getStatus(),
                 proof.getCreatedAt(),

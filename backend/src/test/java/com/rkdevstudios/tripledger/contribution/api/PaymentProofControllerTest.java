@@ -5,6 +5,7 @@ import com.rkdevstudios.tripledger.contribution.application.PaymentProofService;
 import com.rkdevstudios.tripledger.contribution.domain.PaymentProof;
 import com.rkdevstudios.tripledger.contribution.domain.PaymentProofStatus;
 import com.rkdevstudios.tripledger.identity.domain.User;
+import com.rkdevstudios.tripledger.identity.domain.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,12 +30,19 @@ class PaymentProofControllerTest {
 
     private MockMvc mockMvc;
     private PaymentProofService paymentProofService;
+    private UserRepository userRepository;
     private SecurityContext originalSecurityContext;
 
     @BeforeEach
     void setUp() {
         paymentProofService = mock(PaymentProofService.class);
-        PaymentProofController controller = new PaymentProofController(paymentProofService);
+        userRepository = mock(UserRepository.class);
+        
+        User mockUser = new User("usr_1", "Raj", "raj@example.com", "hashed_password", null);
+        when(userRepository.findById("usr_1")).thenReturn(Optional.of(mockUser));
+        when(userRepository.findById("usr_2")).thenReturn(Optional.of(new User("usr_2", "John", "john@example.com", "pass", null)));
+
+        PaymentProofController controller = new PaymentProofController(paymentProofService, userRepository);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
@@ -43,7 +51,6 @@ class PaymentProofControllerTest {
         originalSecurityContext = SecurityContextHolder.getContext();
         SecurityContext mockContext = mock(SecurityContext.class);
         Authentication mockAuthentication = mock(Authentication.class);
-        User mockUser = new User("usr_1", "Raj", "raj@example.com", "hashed_password", null);
         
         when(mockAuthentication.getPrincipal()).thenReturn(mockUser);
         when(mockContext.getAuthentication()).thenReturn(mockAuthentication);

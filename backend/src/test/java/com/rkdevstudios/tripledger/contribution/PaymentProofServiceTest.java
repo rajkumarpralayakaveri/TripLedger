@@ -8,6 +8,8 @@ import com.rkdevstudios.tripledger.expense.domain.ActivityEntryRepository;
 import com.rkdevstudios.tripledger.workspace.domain.MemberRole;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceMember;
 import com.rkdevstudios.tripledger.workspace.domain.WorkspaceMemberRepository;
+import com.rkdevstudios.tripledger.identity.domain.User;
+import com.rkdevstudios.tripledger.identity.domain.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +30,7 @@ class PaymentProofServiceTest {
     private ContributionService contributionService;
     private WorkspaceMemberRepository workspaceMemberRepository;
     private ActivityEntryRepository activityEntryRepository;
+    private UserRepository userRepository;
     private PaymentProofService paymentProofService;
 
     @BeforeEach
@@ -37,6 +40,7 @@ class PaymentProofServiceTest {
         contributionService = mock(ContributionService.class);
         workspaceMemberRepository = mock(WorkspaceMemberRepository.class);
         activityEntryRepository = mock(ActivityEntryRepository.class);
+        userRepository = mock(UserRepository.class);
         
         when(paymentProofRepository.save(any(PaymentProof.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -46,7 +50,8 @@ class PaymentProofServiceTest {
                 storageService,
                 contributionService,
                 workspaceMemberRepository,
-                activityEntryRepository
+                activityEntryRepository,
+                userRepository
         );
     }
 
