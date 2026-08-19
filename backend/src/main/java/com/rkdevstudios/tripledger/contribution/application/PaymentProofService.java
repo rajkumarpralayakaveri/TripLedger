@@ -18,9 +18,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 @Transactional(readOnly = true)
 public class PaymentProofService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PaymentProofService.class);
 
     private final PaymentProofRepository paymentProofRepository;
     private final PaymentProofStorageService storageService;
@@ -81,10 +86,14 @@ public class PaymentProofService {
 
     @Transactional
     public PaymentProof completeUpload(String workspaceId, String paymentId, String publicId, String userId) {
+        long startTime = System.currentTimeMillis();
+        logger.info("entered completeUpload - time: 0ms");
+
         verifyMember(workspaceId, userId);
 
         PaymentProof proof = paymentProofRepository.findByIdWithLock(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment proof not found"));
+        logger.info("payment loaded - elapsed: {}ms", System.currentTimeMillis() - startTime);
 
         if (!proof.getWorkspaceId().equals(workspaceId)) {
             throw new IllegalArgumentException("Payment proof does not belong to this workspace");
@@ -93,12 +102,17 @@ public class PaymentProofService {
         if (!proof.getUserId().equals(userId)) {
             throw new SecurityException("Authenticated caller does not own this payment proof");
         }
+        logger.info("authorization completed - elapsed: {}ms", System.currentTimeMillis() - startTime);
 
         if (proof.getStatus() != PaymentProofStatus.UPLOAD_IN_PROGRESS) {
+            logger.info("payment already completed - status: {} - elapsed: {}ms", proof.getStatus(), System.currentTimeMillis() - startTime);
             return proof;
         }
 
+        logger.info("Cloudinary verification started - elapsed: {}ms", System.currentTimeMillis() - startTime);
         CloudinaryAssetMetadata metadata = storageService.verifyUploadedAsset(publicId);
+        logger.info("Cloudinary verification completed - elapsed: {}ms", System.currentTimeMillis() - startTime);
+
         if (metadata == null) {
             throw new IllegalStateException("Cloudinary asset verification returned empty metadata");
         }
@@ -120,10 +134,12 @@ public class PaymentProofService {
             throw new IllegalArgumentException("Receipt image size exceeds the maximum limit of 5MB.");
         }
 
+        logger.info("payment update started - elapsed: {}ms", System.currentTimeMillis() - startTime);
         proof.setStatus(PaymentProofStatus.PENDING);
         proof.setSubmittedAt(Instant.now());
         PaymentProof saved = paymentProofRepository.save(proof);
 
+        logger.info("activity persistence started - elapsed: {}ms", System.currentTimeMillis() - startTime);
         String meta = "{\"paymentId\":\"" + saved.getId() + "\",\"amount\":\"" + saved.getAmount() + "\"}";
         ActivityEntry entry = new ActivityEntry(
                 UUID.randomUUID().toString(),
@@ -134,6 +150,7 @@ public class PaymentProofService {
         );
         activityEntryRepository.save(entry);
 
+        logger.info("transaction completed - elapsed: {}ms", System.currentTimeMillis() - startTime);
         return saved;
     }
 
