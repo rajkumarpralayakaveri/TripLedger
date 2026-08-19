@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.sql.Connection;
+import java.util.List;
 
 @Component
 public class IndexInitializer {
@@ -35,9 +36,23 @@ public class IndexInitializer {
                     logger.info("Successfully verified/created uq_cash_entry_reference_id index on PostgreSQL.");
 
                     logger.info("Updating PostgreSQL check constraint for activity_entries.activity_type...");
-                    jdbcTemplate.execute(
-                            "ALTER TABLE activity_entries DROP CONSTRAINT IF EXISTS activity_entries_activity_type_check"
-                    );
+                    try {
+                        List<String> checkConstraints = jdbcTemplate.queryForList(
+                                "SELECT constraint_name FROM information_schema.table_constraints " +
+                                "WHERE table_name = 'activity_entries' AND constraint_type = 'CHECK'",
+                                String.class
+                        );
+                        for (String constraint : checkConstraints) {
+                            logger.info("Dropping constraint: {}", constraint);
+                            jdbcTemplate.execute("ALTER TABLE activity_entries DROP CONSTRAINT IF EXISTS " + constraint);
+                        }
+                    } catch (Exception e) {
+                        logger.warn("Failed to drop existing check constraints dynamically; trying fallback drop: {}", e.getMessage());
+                        jdbcTemplate.execute(
+                                "ALTER TABLE activity_entries DROP CONSTRAINT IF EXISTS activity_entries_activity_type_check"
+                        );
+                    }
+
                     jdbcTemplate.execute(
                             "ALTER TABLE activity_entries ADD CONSTRAINT activity_entries_activity_type_check " +
                             "CHECK (activity_type IN ('EXPENSE_CREATED', 'EXPENSE_UPDATED', 'EXPENSE_DELETED', " +
