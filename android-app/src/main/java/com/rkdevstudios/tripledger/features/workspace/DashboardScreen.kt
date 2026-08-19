@@ -33,6 +33,9 @@ fun DashboardScreen(
     val isLoading by viewModel.isLoadingWorkspaces.collectAsState()
     val error by viewModel.workspacesError.collectAsState()
     val isRefreshing by viewModel.isRefreshingWorkspaces.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.loadWorkspaces()
+    }
 
     val pullToRefreshState = rememberPullToRefreshState()
     if (pullToRefreshState.isRefreshing) {

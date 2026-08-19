@@ -119,10 +119,6 @@ class WorkspaceViewModel(
     private val _currentHistory = MutableStateFlow<List<SettlementHistoryGroupItem>>(emptyList())
     val currentHistory: StateFlow<List<SettlementHistoryGroupItem>> = _currentHistory.asStateFlow()
 
-    init {
-        loadWorkspaces()
-    }
-
     fun loadWorkspaces() {
         viewModelScope.launch {
             _isLoadingWorkspaces.value = true
