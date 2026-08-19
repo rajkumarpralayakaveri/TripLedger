@@ -180,7 +180,8 @@ interface CloudinaryApiService {
         @retrofit2.http.Part("api_key") apiKey: okhttp3.RequestBody,
         @retrofit2.http.Part("timestamp") timestamp: okhttp3.RequestBody,
         @retrofit2.http.Part("signature") signature: okhttp3.RequestBody,
-        @retrofit2.http.Part("public_id") publicId: okhttp3.RequestBody
+        @retrofit2.http.Part("public_id") publicId: okhttp3.RequestBody,
+        @retrofit2.http.Part("type") type: okhttp3.RequestBody
     ): retrofit2.Response<CloudinaryUploadResponseDto>
 }
 

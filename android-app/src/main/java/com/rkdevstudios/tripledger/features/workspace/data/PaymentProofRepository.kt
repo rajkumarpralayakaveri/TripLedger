@@ -65,6 +65,7 @@ class PaymentProofRepository(
             val timestampBody = timestamp.toString().toRequestBody("text/plain".toMediaTypeOrNull())
             val signatureBody = signature.toRequestBody("text/plain".toMediaTypeOrNull())
             val publicIdBody = publicId.toRequestBody("text/plain".toMediaTypeOrNull())
+            val typeBody = "private".toRequestBody("text/plain".toMediaTypeOrNull())
             
             val response = cloudinaryApiService.uploadImage(
                 url = url,
@@ -72,7 +73,8 @@ class PaymentProofRepository(
                 apiKey = apiKeyBody,
                 timestamp = timestampBody,
                 signature = signatureBody,
-                publicId = publicIdBody
+                publicId = publicIdBody,
+                type = typeBody
             )
             
             if (response.isSuccessful && response.body() != null) {

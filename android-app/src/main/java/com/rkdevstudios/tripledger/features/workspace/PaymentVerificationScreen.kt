@@ -104,18 +104,21 @@ fun PaymentVerificationScreen(
                                             CircularProgressIndicator(modifier = Modifier.size(24.dp))
                                         }
                                     },
-                                    error = {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = androidx.compose.ui.Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "Failed to load receipt image",
-                                                color = MaterialTheme.colorScheme.error,
-                                                style = MaterialTheme.typography.bodySmall
-                                            )
-                                        }
-                                    },
+                                     error = { state ->
+                                         val throwable = state.result.throwable
+                                         val errorMsg = throwable.message ?: throwable.javaClass.simpleName
+                                         android.util.Log.e("CoilImageLoad", "Failed to load image", throwable)
+                                         Box(
+                                             modifier = Modifier.fillMaxSize(),
+                                             contentAlignment = androidx.compose.ui.Alignment.Center
+                                         ) {
+                                             Text(
+                                                 text = "Failed to load receipt image: $errorMsg",
+                                                 color = MaterialTheme.colorScheme.error,
+                                                 style = MaterialTheme.typography.bodySmall
+                                             )
+                                         }
+                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(180.dp)

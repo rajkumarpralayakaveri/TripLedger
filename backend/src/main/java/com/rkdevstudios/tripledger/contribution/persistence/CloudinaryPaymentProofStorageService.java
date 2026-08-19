@@ -44,6 +44,7 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
         Map<String, Object> params = new HashMap<>();
         params.put("public_id", publicId);
         params.put("timestamp", timestamp);
+        params.put("type", "private");
 
         String signature = cloudinary.apiSignRequest(params, apiSecret);
 
