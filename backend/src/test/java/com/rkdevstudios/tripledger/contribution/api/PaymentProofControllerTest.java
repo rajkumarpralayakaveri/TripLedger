@@ -164,4 +164,19 @@ class PaymentProofControllerTest {
                 .andExpect(jsonPath("$.data.status").value("REJECTED"))
                 .andExpect(jsonPath("$.data.rejectionReason").value("Mismatched receipt amount"));
     }
+
+    @Test
+    void testCompleteUploadVerificationTimeoutReturns500() throws Exception {
+        String workspaceId = "ws_1";
+        when(paymentProofService.completeUpload(eq(workspaceId), eq("proof_1"), eq("public_id_path"), eq("usr_1")))
+                .thenThrow(new RuntimeException("Cloudinary asset verification failed: connect timed out"));
+
+        mockMvc.perform(post("/api/v1/workspaces/{id}/payments/complete", workspaceId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"paymentId\":\"proof_1\",\"publicId\":\"public_id_path\"}"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(jsonPath("$.error.message").value("An unexpected error occurred: Cloudinary asset verification failed: connect timed out"));
+    }
 }

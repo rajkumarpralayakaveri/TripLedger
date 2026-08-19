@@ -10,8 +10,13 @@ import org.springframework.stereotype.Service;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class CloudinaryPaymentProofStorageService implements PaymentProofStorageService {
+
+    private static final Logger logger = LoggerFactory.getLogger(CloudinaryPaymentProofStorageService.class);
 
     private final Cloudinary cloudinary;
     private final String cloudName;
@@ -32,10 +37,11 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
                 "apiKey=" + (apiKey != null && !apiKey.trim().isEmpty() ? "PRESENT" : "MISSING") + ", " +
                 "apiSecret=" + (apiSecret != null && !apiSecret.trim().isEmpty() ? "PRESENT" : "MISSING"));
 
-        Map<String, String> config = new HashMap<>();
+        Map<String, Object> config = new HashMap<>();
         config.put("cloud_name", cloudName);
         config.put("api_key", apiKey);
         config.put("api_secret", apiSecret);
+        config.put("timeout", 15000); // 15 seconds request/socket timeout
         this.cloudinary = new Cloudinary(config);
     }
 
@@ -59,6 +65,8 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
 
     @Override
     public CloudinaryAssetMetadata verifyUploadedAsset(String publicId) {
+        long startTime = System.currentTimeMillis();
+        logger.info("verification started - publicId: {}", publicId);
         try {
             Map<?, ?> result = cloudinary.api().resource(publicId, ObjectUtils.emptyMap());
             
@@ -68,8 +76,11 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
             Number bytesNum = (Number) result.get("bytes");
             long bytes = bytesNum != null ? bytesNum.longValue() : 0L;
 
+            logger.info("verification completed - elapsed: {}ms", System.currentTimeMillis() - startTime);
             return new CloudinaryAssetMetadata(fetchedPublicId, resourceType, format, bytes);
         } catch (Exception e) {
+            long elapsed = System.currentTimeMillis() - startTime;
+            logger.error("verification failed - elapsed: {}ms - error: {} - {}", elapsed, e.getClass().getName(), e.getMessage());
             throw new RuntimeException("Cloudinary asset verification failed: " + e.getMessage(), e);
         }
     }
