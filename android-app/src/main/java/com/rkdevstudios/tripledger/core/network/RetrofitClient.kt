@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit
 class RetrofitClient(private val sessionManager: SessionManager) {
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
-        // Safe logging level: logs only requests and responses metadata
-        level = HttpLoggingInterceptor.Level.BASIC
+        // Detailed logging level for diagnostic investigation
+        level = HttpLoggingInterceptor.Level.BODY
     }
 
     private val okHttpClient = OkHttpClient.Builder()
