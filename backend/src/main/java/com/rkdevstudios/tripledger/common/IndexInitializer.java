@@ -33,13 +33,25 @@ public class IndexInitializer {
                             "WHERE entry_type = 'CASH'"
                     );
                     logger.info("Successfully verified/created uq_cash_entry_reference_id index on PostgreSQL.");
+
+                    logger.info("Updating PostgreSQL check constraint for activity_entries.activity_type...");
+                    jdbcTemplate.execute(
+                            "ALTER TABLE activity_entries DROP CONSTRAINT IF EXISTS activity_entries_activity_type_check"
+                    );
+                    jdbcTemplate.execute(
+                            "ALTER TABLE activity_entries ADD CONSTRAINT activity_entries_activity_type_check " +
+                            "CHECK (activity_type IN ('EXPENSE_CREATED', 'EXPENSE_UPDATED', 'EXPENSE_DELETED', " +
+                            "'MEMBER_JOINED', 'WORKSPACE_CREATED', 'SETTLEMENT_CONFIRMED', 'PAYMENT_SUBMITTED', " +
+                            "'PAYMENT_APPROVED', 'PAYMENT_REJECTED'))"
+                    );
+                    logger.info("Successfully updated activity_entries_activity_type_check check constraint on PostgreSQL.");
                 } else {
-                    logger.info("Non-PostgreSQL database detected ({}); skipping partial unique index DDL.", dbName);
+                    logger.info("Non-PostgreSQL database detected ({}); skipping partial unique index and check constraint DDL.", dbName);
                 }
                 return null;
             });
         } catch (Exception e) {
-            logger.error("Failed to execute database index initialization: ", e);
+            logger.error("Failed to execute database schema initialization: ", e);
         }
     }
 }
