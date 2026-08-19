@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
                         PaymentSubmissionScreen(
                             workspaceId = workspaceId,
                             viewModel = paymentProofViewModel,
+                            workspaceViewModel = workspaceViewModel,
                             currentUserId = currentUserId,
                             onNavigateBack = { navController.navigateUp() }
                         )
@@ -150,6 +151,7 @@ class MainActivity : ComponentActivity() {
                         PaymentVerificationScreen(
                             workspaceId = workspaceId,
                             viewModel = paymentProofViewModel,
+                            workspaceViewModel = workspaceViewModel,
                             verifierId = currentUserId,
                             onNavigateBack = { navController.navigateUp() }
                         )

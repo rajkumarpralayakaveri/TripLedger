@@ -16,6 +16,7 @@ import com.rkdevstudios.tripledger.core.designsystem.components.TripButton
 import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.components.TripTextField
 import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
+import com.rkdevstudios.tripledger.core.utils.CurrencyFormatter
 import java.math.BigDecimal
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,9 +24,14 @@ import java.math.BigDecimal
 fun PaymentSubmissionScreen(
     workspaceId: String,
     viewModel: PaymentProofViewModel,
+    workspaceViewModel: WorkspaceViewModel,
     currentUserId: String,
     onNavigateBack: () -> Unit
 ) {
+    workspaceViewModel.selectWorkspace(workspaceId)
+    val currentWorkspace by workspaceViewModel.currentWorkspace.collectAsState()
+    val currencyCode = currentWorkspace?.baseCurrency ?: "INR"
+
     val context = LocalContext.current
     val contentResolver = remember { context.contentResolver }
 
@@ -183,7 +189,7 @@ fun PaymentSubmissionScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Amount: ₹${item.amount}",
+                                    text = "Amount: ${CurrencyFormatter.formatMoney(item.amount, currencyCode)}",
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(

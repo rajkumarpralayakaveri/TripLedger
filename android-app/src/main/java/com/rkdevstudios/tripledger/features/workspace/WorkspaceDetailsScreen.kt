@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.rkdevstudios.tripledger.core.designsystem.components.TripButton
 import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
+import com.rkdevstudios.tripledger.core.utils.CurrencyFormatter
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -148,8 +149,8 @@ fun WorkspaceDetailsScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            Text(text = "Planned: ${ws.baseCurrency} ${snap.budget}", style = MaterialTheme.typography.bodyMedium)
-                                            Text(text = "Spent: ${ws.baseCurrency} ${snap.spent}", style = MaterialTheme.typography.bodyMedium)
+                                            Text(text = "Planned: ${CurrencyFormatter.formatMoney(snap.budget, ws.baseCurrency)}", style = MaterialTheme.typography.bodyMedium)
+                                            Text(text = "Spent: ${CurrencyFormatter.formatMoney(snap.spent, ws.baseCurrency)}", style = MaterialTheme.typography.bodyMedium)
                                         }
                                         val budgetProgress = if (snap.budget.compareTo(BigDecimal.ZERO) > 0) {
                                             snap.spent.divide(snap.budget, 2, RoundingMode.HALF_UP).toFloat()
@@ -161,7 +162,7 @@ fun WorkspaceDetailsScreen(
                                             trackColor = MaterialTheme.colorScheme.surfaceVariant
                                         )
                                         Text(
-                                            text = "Remaining Budget: ${ws.baseCurrency} ${snap.budget.subtract(snap.spent)}",
+                                            text = "Remaining Budget: ${CurrencyFormatter.formatMoney(snap.budget.subtract(snap.spent), ws.baseCurrency)}",
                                             style = MaterialTheme.typography.bodySmall
                                         )
 
@@ -173,8 +174,8 @@ fun WorkspaceDetailsScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            Text(text = "Funded: ${ws.baseCurrency} ${snap.currentFund}", style = MaterialTheme.typography.bodyMedium)
-                                            Text(text = "Gap: ${ws.baseCurrency} ${snap.fundingGap}", style = MaterialTheme.typography.bodyMedium)
+                                            Text(text = "Funded: ${CurrencyFormatter.formatMoney(snap.currentFund, ws.baseCurrency)}", style = MaterialTheme.typography.bodyMedium)
+                                            Text(text = "Gap: ${CurrencyFormatter.formatMoney(snap.fundingGap, ws.baseCurrency)}", style = MaterialTheme.typography.bodyMedium)
                                         }
                                         val fundProgress = if (snap.budget.compareTo(BigDecimal.ZERO) > 0) {
                                             snap.currentFund.divide(snap.budget, 2, RoundingMode.HALF_UP).toFloat()
@@ -236,12 +237,12 @@ fun WorkspaceDetailsScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            Text(text = "Contributed: ${ws.baseCurrency} ${member.total}", style = MaterialTheme.typography.bodySmall)
-                                            Text(text = "Planned: ${ws.baseCurrency} ${member.planned}", style = MaterialTheme.typography.bodySmall)
+                                            Text(text = "Contributed: ${CurrencyFormatter.formatMoney(member.total, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
+                                            Text(text = "Planned: ${CurrencyFormatter.formatMoney(member.planned, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
                                         }
                                         if (member.remaining.compareTo(BigDecimal.ZERO) > 0) {
                                             Text(
-                                                text = "Remaining: ${ws.baseCurrency} ${member.remaining}",
+                                                text = "Remaining: ${CurrencyFormatter.formatMoney(member.remaining, ws.baseCurrency)}",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.error,
                                                 modifier = Modifier.padding(top = TripSpacing.XS)

@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import com.rkdevstudios.tripledger.contribution.domain.ContributionStrategy;
 import java.util.Map;
 
@@ -26,6 +27,7 @@ public record WorkspaceCreateRequest(
 
     @NotBlank(message = "Base currency is required")
     @Size(min = 3, max = 3, message = "Base currency must be a 3-letter ISO code")
+    @Pattern(regexp = "^(INR|USD|EUR|GBP)$", message = "Currency must be one of: INR, USD, EUR, GBP")
     String baseCurrency,
 
     @Positive(message = "Budget must be positive")

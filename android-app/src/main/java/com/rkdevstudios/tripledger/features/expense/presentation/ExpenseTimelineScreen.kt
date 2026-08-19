@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import com.rkdevstudios.tripledger.core.designsystem.components.TripButton
 import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
+import com.rkdevstudios.tripledger.core.utils.CurrencyFormatter
 import com.rkdevstudios.tripledger.features.workspace.WorkspaceViewModel
 
 @Composable
@@ -81,7 +82,7 @@ fun ExpenseTimelineScreen(
                                         )
                                     }
                                     Text(
-                                        text = "${expense.currency} ${expense.amount}",
+                                        text = CurrencyFormatter.formatMoney(expense.amount, expense.currency),
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.primary
                                     )

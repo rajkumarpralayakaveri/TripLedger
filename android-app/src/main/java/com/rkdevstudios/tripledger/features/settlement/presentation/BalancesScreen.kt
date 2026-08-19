@@ -14,6 +14,8 @@ import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
 import com.rkdevstudios.tripledger.features.workspace.WorkspaceViewModel
 
+import com.rkdevstudios.tripledger.core.utils.CurrencyFormatter
+
 @Composable
 fun BalancesScreen(
     workspaceId: String,
@@ -24,6 +26,8 @@ fun BalancesScreen(
 ) {
     viewModel.selectWorkspace(workspaceId)
     val balances by viewModel.currentBalances.collectAsState()
+    val currentWorkspace by viewModel.currentWorkspace.collectAsState()
+    val currencyCode = currentWorkspace?.baseCurrency ?: "INR"
 
     Column(
         modifier = Modifier
@@ -54,9 +58,11 @@ fun BalancesScreen(
                             } else {
                                 MaterialTheme.colorScheme.error
                             }
-                            val prefix = if (mb.balance > java.math.BigDecimal.ZERO) "+" else ""
+                            val balanceAbs = mb.balance.abs()
+                            val formattedBalance = CurrencyFormatter.formatMoney(balanceAbs, currencyCode)
+                            val prefix = if (mb.balance > java.math.BigDecimal.ZERO) "+" else if (mb.balance < java.math.BigDecimal.ZERO) "-" else ""
                             Text(
-                                text = "$prefix₹${mb.balance}",
+                                text = "$prefix$formattedBalance",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = balanceColor
                             )
@@ -66,8 +72,8 @@ fun BalancesScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = "Paid: ₹${mb.paid}", style = MaterialTheme.typography.bodySmall)
-                            Text(text = "Share: ₹${mb.owed}", style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Paid: ${CurrencyFormatter.formatMoney(mb.paid, currencyCode)}", style = MaterialTheme.typography.bodySmall)
+                            Text(text = "Share: ${CurrencyFormatter.formatMoney(mb.owed, currencyCode)}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }

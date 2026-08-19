@@ -52,12 +52,32 @@ fun CreateWorkspaceScreen(
             enabled = !isCreating
         )
 
-        TripTextField(
-            value = baseCurrency,
-            onValueChange = { baseCurrency = it },
-            label = "Base Currency (ISO)",
-            enabled = !isCreating
+        Text(
+            text = "Base Currency",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = TripSpacing.S)
         )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
+        ) {
+            listOf("INR", "USD", "EUR", "GBP").forEach { curr ->
+                val isSelected = baseCurrency == curr
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { baseCurrency = curr },
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent
+                    ),
+                    enabled = !isCreating,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = curr,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
 
         TripTextField(
             value = budget,

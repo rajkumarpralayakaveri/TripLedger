@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import com.rkdevstudios.tripledger.core.designsystem.components.TripButton
 import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
+import com.rkdevstudios.tripledger.core.utils.CurrencyFormatter
 import com.rkdevstudios.tripledger.features.workspace.WorkspaceViewModel
 
 @Composable
@@ -62,7 +63,7 @@ fun SettlementPlanScreen(
                                     style = MaterialTheme.typography.titleMedium
                                 )
                                 Text(
-                                    text = "${transfer.currency} ${transfer.amount}",
+                                    text = CurrencyFormatter.formatMoney(transfer.amount, transfer.currency),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = MaterialTheme.colorScheme.primary
                                 )

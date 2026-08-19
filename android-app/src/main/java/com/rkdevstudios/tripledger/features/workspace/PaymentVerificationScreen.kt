@@ -15,14 +15,20 @@ import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.components.TripTextField
 import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
 
+import com.rkdevstudios.tripledger.core.utils.CurrencyFormatter
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentVerificationScreen(
     workspaceId: String,
     viewModel: PaymentProofViewModel,
+    workspaceViewModel: WorkspaceViewModel,
     verifierId: String,
     onNavigateBack: () -> Unit
 ) {
+    workspaceViewModel.selectWorkspace(workspaceId)
+    val currentWorkspace by workspaceViewModel.currentWorkspace.collectAsState()
+    val currencyCode = currentWorkspace?.baseCurrency ?: "INR"
     val payments by viewModel.payments.collectAsState()
     val isVerifying by viewModel.isVerifyingPayment.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
@@ -83,7 +89,7 @@ fun PaymentVerificationScreen(
                             ) {
                                 Column {
                                     Text(text = "Payer: ${item.payerName}", style = MaterialTheme.typography.titleMedium)
-                                    Text(text = "Amount: ₹${item.amount}", style = MaterialTheme.typography.bodyMedium)
+                                    Text(text = "Amount: ${CurrencyFormatter.formatMoney(item.amount, currencyCode)}", style = MaterialTheme.typography.bodyMedium)
                                 }
                                 Text(
                                     text = item.status,
