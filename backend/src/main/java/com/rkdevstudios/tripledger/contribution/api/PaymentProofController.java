@@ -19,16 +19,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.rkdevstudios.tripledger.contribution.application.PaymentProofStorageService;
+
 @RestController
 @RequestMapping(ApiRoutes.API_V1 + "/workspaces/{id}/payments")
 public class PaymentProofController {
 
     private final PaymentProofService paymentProofService;
     private final UserRepository userRepository;
+    private final PaymentProofStorageService storageService;
 
-    public PaymentProofController(PaymentProofService paymentProofService, UserRepository userRepository) {
+    public PaymentProofController(PaymentProofService paymentProofService, UserRepository userRepository, PaymentProofStorageService storageService) {
         this.paymentProofService = paymentProofService;
         this.userRepository = userRepository;
+        this.storageService = storageService;
     }
 
     private User getAuthenticatedUser() {
@@ -80,6 +84,11 @@ public class PaymentProofController {
                 .map(User::getName)
                 .orElse("Someone");
 
+        String viewUrl = null;
+        if (proof.getStatus() == PaymentProofStatus.PENDING || proof.getStatus() == PaymentProofStatus.APPROVED || proof.getStatus() == PaymentProofStatus.REJECTED) {
+            viewUrl = storageService.generateSecureViewUrl(proof.getCloudinaryPublicId());
+        }
+
         PaymentProofResponseDto response = new PaymentProofResponseDto(
                 proof.getId(),
                 proof.getWorkspaceId(),
@@ -92,7 +101,7 @@ public class PaymentProofController {
                 proof.getVerifiedAt(),
                 proof.getVerifiedBy(),
                 proof.getRejectionReason(),
-                null
+                viewUrl
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -138,6 +147,11 @@ public class PaymentProofController {
                 .map(User::getName)
                 .orElse("Someone");
 
+        String viewUrl = null;
+        if (proof.getStatus() == PaymentProofStatus.PENDING || proof.getStatus() == PaymentProofStatus.APPROVED || proof.getStatus() == PaymentProofStatus.REJECTED) {
+            viewUrl = storageService.generateSecureViewUrl(proof.getCloudinaryPublicId());
+        }
+
         PaymentProofResponseDto response = new PaymentProofResponseDto(
                 proof.getId(),
                 proof.getWorkspaceId(),
@@ -150,7 +164,7 @@ public class PaymentProofController {
                 proof.getVerifiedAt(),
                 proof.getVerifiedBy(),
                 proof.getRejectionReason(),
-                null
+                viewUrl
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -169,6 +183,11 @@ public class PaymentProofController {
                 .map(User::getName)
                 .orElse("Someone");
 
+        String rejectViewUrl = null;
+        if (proof.getStatus() == PaymentProofStatus.PENDING || proof.getStatus() == PaymentProofStatus.APPROVED || proof.getStatus() == PaymentProofStatus.REJECTED) {
+            rejectViewUrl = storageService.generateSecureViewUrl(proof.getCloudinaryPublicId());
+        }
+
         PaymentProofResponseDto response = new PaymentProofResponseDto(
                 proof.getId(),
                 proof.getWorkspaceId(),
@@ -181,7 +200,7 @@ public class PaymentProofController {
                 proof.getVerifiedAt(),
                 proof.getVerifiedBy(),
                 proof.getRejectionReason(),
-                null
+                rejectViewUrl
         );
 
         return ResponseEntity.ok(ApiResponse.success(response));

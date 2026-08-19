@@ -1,5 +1,6 @@
 package com.rkdevstudios.tripledger.contribution.api;
 
+import com.rkdevstudios.tripledger.contribution.application.PaymentProofStorageService;
 import com.rkdevstudios.tripledger.common.api.GlobalExceptionHandler;
 import com.rkdevstudios.tripledger.contribution.application.PaymentProofService;
 import com.rkdevstudios.tripledger.contribution.domain.PaymentProof;
@@ -31,18 +32,20 @@ class PaymentProofControllerTest {
     private MockMvc mockMvc;
     private PaymentProofService paymentProofService;
     private UserRepository userRepository;
+    private PaymentProofStorageService storageService;
     private SecurityContext originalSecurityContext;
 
     @BeforeEach
     void setUp() {
         paymentProofService = mock(PaymentProofService.class);
         userRepository = mock(UserRepository.class);
+        storageService = mock(PaymentProofStorageService.class);
         
         User mockUser = new User("usr_1", "Raj", "raj@example.com", "hashed_password", null);
         when(userRepository.findById("usr_1")).thenReturn(Optional.of(mockUser));
         when(userRepository.findById("usr_2")).thenReturn(Optional.of(new User("usr_2", "John", "john@example.com", "pass", null)));
 
-        PaymentProofController controller = new PaymentProofController(paymentProofService, userRepository);
+        PaymentProofController controller = new PaymentProofController(paymentProofService, userRepository, storageService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())

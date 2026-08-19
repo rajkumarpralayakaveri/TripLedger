@@ -62,4 +62,32 @@ class ExampleUnitTest {
         assertEquals(0, java.math.BigDecimal("7000.0").compareTo(owner.remaining))
         assertEquals("NOT_STARTED", owner.status)
     }
+
+    @Test
+    fun testPaymentProofResponseDtoDeserialization() {
+        val json = """
+            {
+                "id": "proof_123",
+                "workspaceId": "ws_1",
+                "userId": "usr_1",
+                "payerName": "Jack",
+                "amount": 600.00,
+                "status": "PENDING",
+                "createdAt": "2026-08-19T13:20:15Z",
+                "submittedAt": "2026-08-19T13:20:15Z",
+                "verifiedAt": null,
+                "verifiedBy": null,
+                "rejectionReason": null,
+                "viewUrl": "https://res.cloudinary.com/demo/image/upload/v1580518928/sample.jpg"
+            }
+        """.trimIndent()
+
+        val gson = com.google.gson.Gson()
+        val dto = gson.fromJson(json, com.rkdevstudios.tripledger.features.workspace.data.api.PaymentProofResponseDto::class.java)
+
+        assertEquals("proof_123", dto.id)
+        assertEquals("Jack", dto.payerName)
+        assertEquals("PENDING", dto.status)
+        assertEquals("https://res.cloudinary.com/demo/image/upload/v1580518928/sample.jpg", dto.viewUrl)
+    }
 }

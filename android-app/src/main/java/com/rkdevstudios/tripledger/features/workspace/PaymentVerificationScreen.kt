@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.rkdevstudios.tripledger.core.designsystem.components.TripButton
 import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.components.TripTextField
@@ -30,6 +30,7 @@ fun PaymentVerificationScreen(
 
     var rejectTargetId by remember { mutableStateOf<String?>(null) }
     var rejectReason by remember { mutableStateOf("") }
+    var previewImageUrl by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(workspaceId) {
         viewModel.loadPayments(workspaceId)
@@ -92,12 +93,33 @@ fun PaymentVerificationScreen(
                             }
 
                             item.viewUrl?.let { url: String ->
-                                AsyncImage(
+                                SubcomposeAsyncImage(
                                     model = url,
                                     contentDescription = "Receipt receipt image",
+                                    loading = {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = androidx.compose.ui.Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                        }
+                                    },
+                                    error = {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = androidx.compose.ui.Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "Failed to load receipt image",
+                                                color = MaterialTheme.colorScheme.error,
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(180.dp)
+                                        .clickable { previewImageUrl = url }
                                 )
                             }
 
@@ -168,6 +190,33 @@ fun PaymentVerificationScreen(
                 dismissButton = {
                     TextButton(onClick = { rejectTargetId = null }) {
                         Text("Cancel")
+                    }
+                }
+            )
+        }
+
+        // Full Image Preview Dialog
+        if (previewImageUrl != null) {
+            AlertDialog(
+                onDismissRequest = { previewImageUrl = null },
+                title = { Text("Receipt Preview") },
+                text = {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().height(400.dp),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        SubcomposeAsyncImage(
+                            model = previewImageUrl,
+                            contentDescription = "Full receipt image",
+                            loading = { CircularProgressIndicator() },
+                            error = { Text("Failed to load image", color = MaterialTheme.colorScheme.error) },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { previewImageUrl = null }) {
+                        Text("Close")
                     }
                 }
             )
