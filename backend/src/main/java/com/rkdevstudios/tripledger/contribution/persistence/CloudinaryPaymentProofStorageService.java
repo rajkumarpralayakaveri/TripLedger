@@ -4,6 +4,7 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import com.rkdevstudios.tripledger.contribution.application.PaymentProofStorageService;
 import com.rkdevstudios.tripledger.contribution.domain.CloudinaryAssetMetadata;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +24,7 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
     private final String apiKey;
     private final String apiSecret;
 
+    @Autowired
     public CloudinaryPaymentProofStorageService(
             @Value("${cloudinary.cloud-name}") String cloudName,
             @Value("${cloudinary.api-key}") String apiKey,
@@ -43,6 +45,14 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
         config.put("api_secret", apiSecret);
         config.put("timeout", 15000); // 15 seconds request/socket timeout
         this.cloudinary = new Cloudinary(config);
+    }
+
+    // Visible for testing
+    public CloudinaryPaymentProofStorageService(Cloudinary cloudinary) {
+        this.cloudinary = cloudinary;
+        this.cloudName = "";
+        this.apiKey = "";
+        this.apiSecret = "";
     }
 
     @Override
@@ -68,7 +78,9 @@ public class CloudinaryPaymentProofStorageService implements PaymentProofStorage
         long startTime = System.currentTimeMillis();
         logger.info("verification started - publicId: {}", publicId);
         try {
-            Map<?, ?> result = cloudinary.api().resource(publicId, ObjectUtils.emptyMap());
+            Map<String, Object> options = new HashMap<>();
+            options.put("type", "private");
+            Map<?, ?> result = cloudinary.api().resource(publicId, options);
             
             String fetchedPublicId = (String) result.get("public_id");
             String resourceType = (String) result.get("resource_type");
