@@ -33,6 +33,7 @@ fun DashboardScreen(
     val isLoading by viewModel.isLoadingWorkspaces.collectAsState()
     val error by viewModel.workspacesError.collectAsState()
     val isRefreshing by viewModel.isRefreshingWorkspaces.collectAsState()
+    val serverStatus by com.rkdevstudios.tripledger.core.network.ServerState.status.collectAsState()
     LaunchedEffect(Unit) {
         viewModel.loadWorkspaces()
     }
@@ -56,6 +57,30 @@ fun DashboardScreen(
             .fillMaxSize()
             .padding(TripSpacing.M)
     ) {
+        if (serverStatus is com.rkdevstudios.tripledger.core.network.ServerStatus.WakingUp) {
+            val msg = (serverStatus as com.rkdevstudios.tripledger.core.network.ServerStatus.WakingUp).message
+            androidx.compose.material3.Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = TripSpacing.M)
+            ) {
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.padding(TripSpacing.M),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
+                ) {
+                    com.rkdevstudios.tripledger.core.designsystem.components.TripLoadingIndicator()
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
         Text(
             text = "My Trips",
             style = MaterialTheme.typography.headlineMedium,

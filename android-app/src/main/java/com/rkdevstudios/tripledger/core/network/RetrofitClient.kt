@@ -15,6 +15,7 @@ class RetrofitClient(private val sessionManager: SessionManager) {
     }
 
     private val okHttpClient = OkHttpClient.Builder()
+        .addInterceptor(ColdStartRecoveryInterceptor())
         .addInterceptor(AuthInterceptor(sessionManager))
         .addInterceptor(loggingInterceptor)
         .authenticator(TokenAuthenticator(sessionManager, NetworkConfig.BASE_URL))
