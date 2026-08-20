@@ -87,6 +87,29 @@ class PaymentProofRepository(
         }
     }
 
+    suspend fun uploadReceiptToCloudinary(
+        workspaceId: String,
+        fileBytes: ByteArray
+    ): Result<String> {
+        return try {
+            val sigResult = getUploadSignature(workspaceId, BigDecimal.ONE)
+            if (sigResult.isFailure) {
+                return Result.failure(sigResult.exceptionOrNull() ?: Exception("Signature failed"))
+            }
+            val sig = sigResult.getOrThrow()
+            uploadImageToCloudinary(
+                cloudName = sig.cloudName,
+                fileBytes = fileBytes,
+                apiKey = sig.apiKey,
+                timestamp = sig.timestamp,
+                signature = sig.signature,
+                publicId = sig.publicId
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun completeUpload(workspaceId: String, paymentId: String, publicId: String): Result<PaymentProofResponseDto> {
         return try {
             val response = workspaceApiService.completeUpload(workspaceId, PaymentCompletionRequest(paymentId, publicId))

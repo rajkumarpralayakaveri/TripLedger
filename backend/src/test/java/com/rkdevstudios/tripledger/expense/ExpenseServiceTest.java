@@ -156,4 +156,50 @@ class ExpenseServiceTest {
         verify(expenseRepository, times(1)).save(expense);
         verify(eventPublisher, times(1)).publishEvent(any(ExpenseDeletedEvent.class));
     }
+
+    @Test
+    void testCreateExpense_WithReceiptUrlAndExpenseAt_PersistsCorrectly() {
+        String workspaceId = "ws_1";
+        String payerId = "usr_1";
+        BigDecimal amount = BigDecimal.valueOf(1500);
+        String currency = "INR";
+        List<String> participants = Arrays.asList("usr_1", "usr_2");
+        Map<String, BigDecimal> shares = new HashMap<>();
+        shares.put("usr_1", BigDecimal.valueOf(750));
+        shares.put("usr_2", BigDecimal.valueOf(750));
+
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, payerId);
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
+
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.ADMIN);
+        WorkspaceMember m2 = new WorkspaceMember(workspaceId, "usr_2", MemberRole.MEMBER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_1")).thenReturn(Optional.of(m1));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_2")).thenReturn(Optional.of(m2));
+
+        when(splitCalculationService.calculateSplits(eq(amount), eq(SplitType.EQUAL), eq(participants), any()))
+                .thenReturn(shares);
+
+        when(expenseRepository.save(any(Expense.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        java.time.Instant now = java.time.Instant.now();
+        String receiptUrl = "https://res.cloudinary.com/test_cloud/image/upload/receipt_123.jpg";
+        String note = "Dinner bill receipt attached";
+
+        Expense created = expenseService.createExpense(
+                workspaceId, payerId, amount, currency, "Dinner", "cat_food",
+                LocalDate.now(), now, receiptUrl, note, SplitType.EQUAL, participants, null, payerId
+        );
+
+        assertNotNull(created);
+        assertEquals(receiptUrl, created.getReceiptUrl());
+        assertEquals(now, created.getExpenseAt());
+        assertEquals(note, created.getNote());
+
+        ArgumentCaptor<Expense> captor = ArgumentCaptor.forClass(Expense.class);
+        verify(expenseRepository).save(captor.capture());
+        Expense saved = captor.getValue();
+        assertEquals(receiptUrl, saved.getReceiptUrl());
+        assertEquals(now, saved.getExpenseAt());
+        assertEquals(note, saved.getNote());
+    }
 }

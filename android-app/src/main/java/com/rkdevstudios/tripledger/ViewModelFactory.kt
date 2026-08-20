@@ -26,7 +26,7 @@ class ViewModelFactory(
                 AuthViewModel(authRepository, sessionManager, sessionStore) as T
             }
             modelClass.isAssignableFrom(WorkspaceViewModel::class.java) -> {
-                WorkspaceViewModel(workspaceRepository) as T
+                WorkspaceViewModel(workspaceRepository, sessionManager, paymentProofRepository) as T
             }
             modelClass.isAssignableFrom(PaymentProofViewModel::class.java) -> {
                 PaymentProofViewModel(paymentProofRepository) as T

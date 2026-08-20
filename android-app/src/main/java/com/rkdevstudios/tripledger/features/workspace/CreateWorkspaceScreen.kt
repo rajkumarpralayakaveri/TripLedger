@@ -22,6 +22,8 @@ fun CreateWorkspaceScreen(
     var budget by remember { mutableStateOf("") }
     var plannedMemberCount by remember { mutableStateOf("5") }
     var contributionMode by remember { mutableStateOf("COMBINED") }
+    var startDateText by remember { mutableStateOf(LocalDate.now().toString()) }
+    var endDateText by remember { mutableStateOf(LocalDate.now().plusDays(7).toString()) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val isCreating by viewModel.isCreatingWorkspace.collectAsState()
@@ -52,6 +54,26 @@ fun CreateWorkspaceScreen(
             label = "Description (Optional)",
             enabled = !isCreating
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
+        ) {
+            TripTextField(
+                value = startDateText,
+                onValueChange = { startDateText = it },
+                label = "Start Date (YYYY-MM-DD)",
+                enabled = !isCreating,
+                modifier = Modifier.weight(1f)
+            )
+            TripTextField(
+                value = endDateText,
+                onValueChange = { endDateText = it },
+                label = "End Date (YYYY-MM-DD)",
+                enabled = !isCreating,
+                modifier = Modifier.weight(1f)
+            )
+        }
 
         Text(
             text = "Base Currency",
@@ -147,13 +169,25 @@ fun CreateWorkspaceScreen(
                 text = if (isCreating) "Creating Trip..." else "Save",
                 onClick = {
                     errorMessage = null
+                    val parsedStart = try { LocalDate.parse(startDateText) } catch (e: Exception) { null }
+                    val parsedEnd = try { LocalDate.parse(endDateText) } catch (e: Exception) { null }
+
+                    if (parsedStart == null || parsedEnd == null) {
+                        errorMessage = "Please enter valid dates in YYYY-MM-DD format"
+                        return@TripButton
+                    }
+                    if (parsedEnd.isBefore(parsedStart)) {
+                        errorMessage = "End date cannot be before start date"
+                        return@TripButton
+                    }
+
                     val budgetDecimal = budget.toBigDecimalOrNull()
                     val members = plannedMemberCount.toIntOrNull() ?: 1
                     viewModel.createWorkspace(
                         name = name,
                         description = description.takeIf { it.isNotBlank() },
-                        startDate = LocalDate.now(),
-                        endDate = LocalDate.now().plusDays(7),
+                        startDate = parsedStart,
+                        endDate = parsedEnd,
                         baseCurrency = baseCurrency,
                         budget = budgetDecimal,
                         plannedMemberCount = members,

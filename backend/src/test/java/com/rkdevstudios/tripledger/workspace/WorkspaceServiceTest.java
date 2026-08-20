@@ -178,8 +178,12 @@ class WorkspaceServiceTest {
         WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
         WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.MEMBER);
 
+        Workspace ws = new Workspace();
+        ws.setCreatedBy("usr_creator");
+
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+        when(workspaceRepository.findById(wsId)).thenReturn(Optional.of(ws));
 
         // Mock financial entry exists for target member
         when(contributionEntryRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Collections.singletonList(new com.rkdevstudios.tripledger.contribution.domain.ContributionEntry()));
@@ -229,12 +233,79 @@ class WorkspaceServiceTest {
         WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
         WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.ADMIN);
 
+        Workspace ws = new Workspace();
+        ws.setCreatedBy("usr_creator");
+
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
+        when(workspaceRepository.findById(wsId)).thenReturn(Optional.of(ws));
 
         assertThrows(SecurityException.class, () -> {
             workspaceService.removeMember(wsId, targetId, callerId);
         });
+    }
+
+    @Test
+    void testRemoveMember_PrimaryAdminCannotBeRemoved() {
+        String wsId = "ws_111";
+        String callerId = "usr_admin2";
+        String targetId = "usr_creator";
+
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
+        WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.ADMIN);
+
+        Workspace ws = new Workspace();
+        ws.setCreatedBy("usr_creator");
+
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
+        when(workspaceRepository.findById(wsId)).thenReturn(Optional.of(ws));
+
+        assertThrows(SecurityException.class, () -> {
+            workspaceService.removeMember(wsId, targetId, callerId);
+        });
+    }
+
+    @Test
+    void testUpdateMemberRole_RegularAdminCannotDemoteAnotherAdmin() {
+        String wsId = "ws_111";
+        String callerId = "usr_admin1";
+        String targetId = "usr_admin2";
+
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
+        WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.ADMIN);
+
+        Workspace ws = new Workspace();
+        ws.setCreatedBy("usr_creator");
+
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
+        when(workspaceRepository.findById(wsId)).thenReturn(Optional.of(ws));
+
+        assertThrows(SecurityException.class, () -> {
+            workspaceService.updateMemberRole(wsId, targetId, MemberRole.MEMBER, callerId);
+        });
+    }
+
+    @Test
+    void testUpdateMemberRole_PrimaryAdminCanDemoteAnotherAdmin() {
+        String wsId = "ws_111";
+        String callerId = "usr_creator";
+        String targetId = "usr_admin2";
+
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
+        WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.ADMIN);
+
+        Workspace ws = new Workspace();
+        ws.setCreatedBy("usr_creator");
+
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
+        when(workspaceRepository.findById(wsId)).thenReturn(Optional.of(ws));
+        when(workspaceMemberRepository.save(any(WorkspaceMember.class))).thenAnswer(i -> i.getArgument(0));
+
+        WorkspaceMember updated = workspaceService.updateMemberRole(wsId, targetId, MemberRole.MEMBER, callerId);
+        assertEquals(MemberRole.MEMBER, updated.getRole());
     }
 
     @Test

@@ -34,5 +34,9 @@ public record CreateExpenseRequest(
     @NotEmpty(message = "Participant list cannot be empty")
     List<String> participantIds,
 
-    Map<String, BigDecimal> splitValues
+    Map<String, BigDecimal> splitValues,
+
+    java.time.Instant expenseAt,
+    String receiptUrl,
+    String note
 ) {}

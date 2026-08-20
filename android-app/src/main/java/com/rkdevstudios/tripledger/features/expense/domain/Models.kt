@@ -8,11 +8,16 @@ data class ExpenseItem(
     val description: String,
     val amount: BigDecimal,
     val currency: String,
+    val paidByUserId: String = "",
     val paidByName: String,
     val date: LocalDate,
+    val categoryId: String = "",
     val categoryName: String,
     val categoryColor: String,
-    val categoryIcon: String
+    val categoryIcon: String,
+    val expenseAt: String? = null,
+    val receiptUrl: String? = null,
+    val note: String? = null
 )
 
 data class ExpenseTimelineGroup(

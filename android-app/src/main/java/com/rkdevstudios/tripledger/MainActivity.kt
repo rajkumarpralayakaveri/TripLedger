@@ -31,6 +31,7 @@ import com.rkdevstudios.tripledger.features.workspace.data.WorkspaceRepository
 import com.rkdevstudios.tripledger.features.workspace.data.PaymentProofRepository
 import com.rkdevstudios.tripledger.features.workspace.PaymentProofViewModel
 import com.rkdevstudios.tripledger.features.workspace.data.api.WorkspaceApiService
+import com.rkdevstudios.tripledger.features.expense.presentation.ExpenseDetailScreen
 import com.rkdevstudios.tripledger.features.expense.presentation.ExpenseTimelineScreen
 import com.rkdevstudios.tripledger.features.expense.presentation.AddEditExpenseScreen
 import com.rkdevstudios.tripledger.features.expense.presentation.ActivityFeedScreen
@@ -176,8 +177,25 @@ class MainActivity : ComponentActivity() {
                             workspaceId = workspaceId,
                             viewModel = workspaceViewModel,
                             onAddExpense = { navController.navigate("add-expense/$workspaceId") },
+                            onExpenseClick = { expenseId -> navController.navigate("expense-detail/$workspaceId/$expenseId") },
                             onNavigateBack = { navController.navigateUp() },
                             onNavigateToActivities = { navController.navigate("activities/$workspaceId") }
+                        )
+                    }
+                    composable(
+                        route = "expense-detail/{wsId}/{expenseId}",
+                        arguments = listOf(
+                            navArgument("wsId") { type = NavType.StringType },
+                            navArgument("expenseId") { type = NavType.StringType }
+                        )
+                    ) { backStackEntry ->
+                        val workspaceId = backStackEntry.arguments?.getString("wsId").orEmpty()
+                        val expenseId = backStackEntry.arguments?.getString("expenseId").orEmpty()
+                        ExpenseDetailScreen(
+                            workspaceId = workspaceId,
+                            expenseId = expenseId,
+                            viewModel = workspaceViewModel,
+                            onNavigateBack = { navController.navigateUp() }
                         )
                     }
                     composable(

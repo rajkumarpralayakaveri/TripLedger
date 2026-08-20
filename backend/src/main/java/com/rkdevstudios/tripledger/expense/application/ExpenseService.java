@@ -88,6 +88,29 @@ public class ExpenseService {
             Map<String, BigDecimal> splitValues,
             String callerUserId
     ) {
+        return createExpense(
+                workspaceId, paidByUserId, amount, currency, description, categoryId,
+                expenseDate, null, null, null, splitType, participantIds, splitValues, callerUserId
+        );
+    }
+
+    @Transactional
+    public Expense createExpense(
+            String workspaceId,
+            String paidByUserId,
+            BigDecimal amount,
+            String currency,
+            String description,
+            String categoryId,
+            LocalDate expenseDate,
+            java.time.Instant expenseAt,
+            String receiptUrl,
+            String note,
+            SplitType splitType,
+            List<String> participantIds,
+            Map<String, BigDecimal> splitValues,
+            String callerUserId
+    ) {
         // Enforce membership & currency validations
         verifyMember(workspaceId, callerUserId);
         verifyMember(workspaceId, paidByUserId);
@@ -118,7 +141,10 @@ public class ExpenseService {
                 expenseMoney,
                 description,
                 categoryId,
-                expenseDate
+                expenseDate,
+                expenseAt,
+                receiptUrl,
+                note
         );
         expense.setStatus(ExpenseStatus.UNSETTLED);
         expense.setExpenseType(ExpenseType.NORMAL);

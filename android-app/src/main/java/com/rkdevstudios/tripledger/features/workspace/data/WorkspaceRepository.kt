@@ -1,9 +1,12 @@
 package com.rkdevstudios.tripledger.features.workspace.data
 
+import com.rkdevstudios.tripledger.features.expense.domain.ExpenseItem
+import com.rkdevstudios.tripledger.features.expense.domain.ExpenseTimelineGroup
 import com.rkdevstudios.tripledger.features.workspace.MockContributionSummary
 import com.rkdevstudios.tripledger.features.workspace.MockFinancialSnapshot
 import com.rkdevstudios.tripledger.features.workspace.MockWorkspace
 import com.rkdevstudios.tripledger.features.workspace.data.api.WorkspaceApiService
+import java.math.BigDecimal
 import java.time.LocalDate
 
 class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) {
@@ -24,7 +27,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
                         membersCount = dto.memberCount,
-                        contributionMode = dto.contributionMode
+                        contributionMode = dto.contributionMode,
+                        createdBy = dto.createdBy
                     )
                 }
                 Result.success(list)
@@ -50,7 +54,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         planned = c.planned,
                         total = c.total,
                         remaining = c.remaining,
-                        status = c.status
+                        status = c.status,
+                        fronted = c.directExpenseContribution ?: BigDecimal.ZERO
                     )
                 }
                 val snapshot = MockFinancialSnapshot(
@@ -137,7 +142,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
                         membersCount = dto.memberCount,
-                        contributionMode = dto.contributionMode
+                        contributionMode = dto.contributionMode,
+                        createdBy = dto.createdBy
                     )
                 )
             } else {
@@ -202,6 +208,145 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(response.error?.message ?: "Failed to leave workspace"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getExpenseTimeline(workspaceId: String): Result<List<ExpenseTimelineGroup>> {
+        return try {
+            val response = workspaceApiService.getExpenseTimeline(workspaceId)
+            if (response.success && response.data != null) {
+                val groups = response.data.timeline.map { groupDto ->
+                    ExpenseTimelineGroup(
+                        date = try { LocalDate.parse(groupDto.date) } catch (e: Exception) { LocalDate.now() },
+                        expenses = groupDto.expenses.map { itemDto ->
+                            ExpenseItem(
+                                id = itemDto.id,
+                                description = itemDto.description,
+                                amount = itemDto.amount,
+                                currency = itemDto.currency,
+                                paidByUserId = itemDto.paidByUserId,
+                                paidByName = itemDto.paidByName,
+                                categoryId = itemDto.categoryId,
+                                categoryName = itemDto.categoryName,
+                                categoryIcon = itemDto.categoryIcon,
+                                categoryColor = itemDto.categoryColor,
+                                date = try { LocalDate.parse(itemDto.expenseDate) } catch (e: Exception) { LocalDate.now() },
+                                expenseAt = itemDto.expenseAt,
+                                receiptUrl = itemDto.receiptUrl,
+                                note = itemDto.note
+                            )
+                        }
+                    )
+                }
+                Result.success(groups)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to load expense timeline"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun createExpense(
+        workspaceId: String,
+        paidByUserId: String,
+        amount: BigDecimal,
+        currency: String,
+        description: String,
+        categoryId: String,
+        expenseDate: LocalDate,
+        participantIds: List<String>,
+        expenseAt: String? = null,
+        receiptUrl: String? = null,
+        note: String? = null
+    ): Result<Unit> {
+        return try {
+            val request = com.rkdevstudios.tripledger.features.workspace.data.api.CreateExpenseRequestDto(
+                paidByUserId = paidByUserId,
+                amount = amount,
+                currency = currency,
+                description = description,
+                categoryId = categoryId,
+                expenseDate = expenseDate.toString(),
+                splitType = "EQUAL",
+                participantIds = participantIds,
+                expenseAt = expenseAt,
+                receiptUrl = receiptUrl,
+                note = note
+            )
+            val response = workspaceApiService.createExpense(workspaceId, request)
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to create expense"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateWorkspace(
+        workspaceId: String,
+        name: String? = null,
+        description: String? = null,
+        startDate: LocalDate? = null,
+        endDate: LocalDate? = null,
+        budget: BigDecimal? = null,
+        plannedMemberCount: Int? = null,
+        status: String? = null,
+        contributionMode: String? = null
+    ): Result<MockWorkspace> {
+        return try {
+            val request = com.rkdevstudios.tripledger.features.workspace.data.api.WorkspaceUpdateRequestDto(
+                name = name,
+                description = description,
+                startDate = startDate?.toString(),
+                endDate = endDate?.toString(),
+                budget = budget,
+                plannedMemberCount = plannedMemberCount,
+                status = status,
+                contributionMode = contributionMode
+            )
+            val response = workspaceApiService.updateWorkspace(workspaceId, request)
+            if (response.success && response.data != null) {
+                val dto = response.data
+                Result.success(
+                    MockWorkspace(
+                        id = dto.id,
+                        name = dto.name,
+                        description = dto.description ?: "",
+                        startDate = LocalDate.parse(dto.startDate),
+                        endDate = LocalDate.parse(dto.endDate),
+                        baseCurrency = dto.baseCurrency,
+                        budget = dto.budget ?: BigDecimal.ZERO,
+                        plannedMemberCount = dto.plannedMemberCount,
+                        status = dto.status,
+                        membersCount = dto.memberCount,
+                        contributionMode = dto.contributionMode,
+                        createdBy = dto.createdBy
+                    )
+                )
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to update workspace"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun archiveWorkspace(workspaceId: String): Result<Unit> {
+        return try {
+            val request = com.rkdevstudios.tripledger.features.workspace.data.api.WorkspaceUpdateRequestDto(
+                status = "ARCHIVED"
+            )
+            val response = workspaceApiService.updateWorkspace(workspaceId, request)
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to archive workspace"))
             }
         } catch (e: Exception) {
             Result.failure(e)

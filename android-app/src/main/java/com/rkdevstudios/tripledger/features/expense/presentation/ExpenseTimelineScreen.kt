@@ -1,5 +1,6 @@
 package com.rkdevstudios.tripledger.features.expense.presentation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,6 +21,7 @@ fun ExpenseTimelineScreen(
     workspaceId: String,
     viewModel: WorkspaceViewModel,
     onAddExpense: () -> Unit,
+    onExpenseClick: (String) -> Unit = {},
     onNavigateBack: () -> Unit,
     onNavigateToActivities: () -> Unit
 ) {
@@ -61,31 +63,83 @@ fun ExpenseTimelineScreen(
                 }
             } else {
                 items(timeline) { group ->
+                    val groupFormattedDate = try {
+                        group.date.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy"))
+                    } catch (e: Exception) { group.date.toString() }
+
                     Column(verticalArrangement = Arrangement.spacedBy(TripSpacing.S)) {
                         Text(
-                            text = group.date.toString(),
+                            text = groupFormattedDate,
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.secondary
                         )
 
                         group.expenses.forEach { expense ->
-                            TripCard {
-                                Row(
+                            TripCard(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onExpenseClick(expense.id) }
+                            ) {
+                                Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                                    verticalArrangement = Arrangement.spacedBy(TripSpacing.XS)
                                 ) {
-                                    Column {
-                                        Text(text = expense.description, style = MaterialTheme.typography.titleMedium)
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Column {
+                                            Text(text = expense.description, style = MaterialTheme.typography.titleMedium)
+                                            Text(
+                                                text = "Paid by: ${expense.paidByName}",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
                                         Text(
-                                            text = "Paid by: ${expense.paidByName} • ${expense.categoryName}",
-                                            style = MaterialTheme.typography.bodySmall
+                                            text = CurrencyFormatter.formatMoney(expense.amount, expense.currency),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = MaterialTheme.colorScheme.primary
                                         )
                                     }
+
+                                    val formattedDateTime = try {
+                                        val dateStr = expense.date.format(java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy"))
+                                        val timeStr = if (!expense.expenseAt.isNullOrEmpty()) {
+                                            try {
+                                                java.time.Instant.parse(expense.expenseAt)
+                                                    .atZone(java.time.ZoneId.systemDefault())
+                                                    .format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"))
+                                            } catch (e: Exception) {
+                                                java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"))
+                                            }
+                                        } else {
+                                            java.time.LocalTime.now().format(java.time.format.DateTimeFormatter.ofPattern("h:mm a"))
+                                        }
+                                        "$dateStr · $timeStr"
+                                    } catch (e: Exception) {
+                                        expense.date.toString()
+                                    }
+
                                     Text(
-                                        text = CurrencyFormatter.formatMoney(expense.amount, expense.currency),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = MaterialTheme.colorScheme.primary
+                                        text = formattedDateTime,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.secondary
                                     )
+
+                                    if (!expense.note.isNullOrEmpty()) {
+                                        Text(
+                                            text = "Note: ${expense.note}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    if (!expense.receiptUrl.isNullOrEmpty()) {
+                                        Text(
+                                            text = "📄 Receipt attached",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
                             }
                         }

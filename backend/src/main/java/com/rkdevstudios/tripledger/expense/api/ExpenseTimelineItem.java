@@ -14,5 +14,8 @@ public record ExpenseTimelineItem(
     String categoryName,
     String categoryIcon,
     String categoryColor,
-    LocalDate expenseDate
+    LocalDate expenseDate,
+    java.time.Instant expenseAt,
+    String receiptUrl,
+    String note
 ) {}

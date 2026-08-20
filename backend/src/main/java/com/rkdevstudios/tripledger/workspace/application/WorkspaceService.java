@@ -306,6 +306,13 @@ public class WorkspaceService {
             throw new SecurityException("Permission denied. Only ADMINs can remove members.");
         }
 
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
+
+        if (targetUserId.equals(workspace.getCreatedBy())) {
+            throw new SecurityException("Primary admin (trip creator) cannot be removed.");
+        }
+
         if (targetMember.getRole() == MemberRole.ADMIN) {
             throw new SecurityException("ADMIN cannot remove another ADMIN.");
         }
@@ -330,6 +337,14 @@ public class WorkspaceService {
 
         if (targetUserId.equals(callerUserId)) {
             throw new IllegalArgumentException("ADMIN cannot promote or demote themselves");
+        }
+
+        if (targetMember.getRole() == MemberRole.ADMIN && newRole == MemberRole.MEMBER) {
+            Workspace workspace = workspaceRepository.findById(workspaceId)
+                    .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
+            if (!callerUserId.equals(workspace.getCreatedBy())) {
+                throw new SecurityException("Only the primary admin (trip creator) can demote an ADMIN to MEMBER.");
+            }
         }
 
         targetMember.setRole(newRole);

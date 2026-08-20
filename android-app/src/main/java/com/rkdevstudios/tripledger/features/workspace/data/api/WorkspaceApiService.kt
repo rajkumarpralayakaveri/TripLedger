@@ -32,6 +32,12 @@ interface WorkspaceApiService {
         @retrofit2.http.Body request: WorkspaceCreateRequestDto
     ): NetworkResponse<WorkspaceDto>
 
+    @retrofit2.http.PUT("api/v1/workspaces/{id}")
+    suspend fun updateWorkspace(
+        @Path("id") workspaceId: String,
+        @retrofit2.http.Body request: WorkspaceUpdateRequestDto
+    ): NetworkResponse<WorkspaceDto>
+
     @retrofit2.http.POST("api/v1/workspaces/{id}/payments/signature")
     suspend fun getUploadSignature(
         @Path("id") workspaceId: String,
@@ -86,6 +92,17 @@ interface WorkspaceApiService {
     suspend fun leaveWorkspace(
         @Path("id") workspaceId: String
     ): NetworkResponse<Unit>
+
+    @GET("api/v1/workspaces/{id}/expenses")
+    suspend fun getExpenseTimeline(
+        @Path("id") workspaceId: String
+    ): NetworkResponse<ExpenseTimelineResponseDto>
+
+    @retrofit2.http.POST("api/v1/workspaces/{id}/expenses")
+    suspend fun createExpense(
+        @Path("id") workspaceId: String,
+        @retrofit2.http.Body request: CreateExpenseRequestDto
+    ): NetworkResponse<ExpenseDto>
 }
 
 data class UpdateMemberRoleRequestDto(
@@ -102,6 +119,17 @@ data class WorkspaceCreateRequestDto(
     val plannedMemberCount: Int,
     val contributionStrategy: String = "EQUAL",
     val contributionMode: String = "COMBINED"
+)
+
+data class WorkspaceUpdateRequestDto(
+    val name: String? = null,
+    val description: String? = null,
+    val startDate: String? = null,
+    val endDate: String? = null,
+    val budget: BigDecimal? = null,
+    val plannedMemberCount: Int? = null,
+    val status: String? = null,
+    val contributionMode: String? = null
 )
 
 data class UpdatePlannedContributionRequestDto(
@@ -142,7 +170,8 @@ data class WorkspaceDto(
     val memberCount: Int,
     val status: String,
     val contributionStrategy: String,
-    val contributionMode: String = "COMBINED"
+    val contributionMode: String = "COMBINED",
+    val createdBy: String? = null
 )
 
 data class WorkspaceFinancialSnapshotDto(
@@ -164,6 +193,9 @@ data class ContributionSummaryDto(
     val name: String,
     val role: String,
     @SerializedName("plannedContribution") val planned: BigDecimal,
+    @SerializedName("cashContributed") val cashContributed: BigDecimal? = BigDecimal.ZERO,
+    @SerializedName("directExpenseContribution") val directExpenseContribution: BigDecimal? = BigDecimal.ZERO,
+    @SerializedName("adjustments") val adjustments: BigDecimal? = BigDecimal.ZERO,
     @SerializedName("totalContribution") val total: BigDecimal,
     @SerializedName("remainingContribution") val remaining: BigDecimal,
     val status: String
@@ -223,4 +255,57 @@ interface CloudinaryApiService {
 data class CloudinaryUploadResponseDto(
     val public_id: String,
     val secure_url: String
+)
+
+data class CreateExpenseRequestDto(
+    val paidByUserId: String,
+    val amount: BigDecimal,
+    val currency: String,
+    val description: String,
+    val categoryId: String,
+    val expenseDate: String,
+    val splitType: String = "EQUAL",
+    val participantIds: List<String>,
+    val splitValues: Map<String, BigDecimal>? = null,
+    val expenseAt: String? = null,
+    val receiptUrl: String? = null,
+    val note: String? = null
+)
+
+data class ExpenseDto(
+    val id: String,
+    val workspaceId: String,
+    val paidByUserId: String,
+    val description: String,
+    val categoryId: String,
+    val expenseDate: String,
+    val expenseAt: String?,
+    val receiptUrl: String?,
+    val note: String?
+)
+
+data class ExpenseTimelineItemDto(
+    val id: String,
+    val description: String,
+    val amount: BigDecimal,
+    val currency: String,
+    val paidByUserId: String,
+    val paidByName: String,
+    val categoryId: String,
+    val categoryName: String,
+    val categoryIcon: String,
+    val categoryColor: String,
+    val expenseDate: String,
+    val expenseAt: String?,
+    val receiptUrl: String?,
+    val note: String?
+)
+
+data class ExpenseTimelineGroupDto(
+    val date: String,
+    val expenses: List<ExpenseTimelineItemDto>
+)
+
+data class ExpenseTimelineResponseDto(
+    val timeline: List<ExpenseTimelineGroupDto>
 )

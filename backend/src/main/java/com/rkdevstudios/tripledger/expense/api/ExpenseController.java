@@ -72,6 +72,9 @@ public class ExpenseController {
                 request.description(),
                 request.categoryId(),
                 request.expenseDate(),
+                request.expenseAt(),
+                request.receiptUrl(),
+                request.note(),
                 request.splitType(),
                 request.participantIds(),
                 request.splitValues(),
@@ -103,7 +106,10 @@ public class ExpenseController {
                     catName,
                     catIcon,
                     catColor,
-                    e.getExpenseDate()
+                    e.getExpenseDate(),
+                    e.getExpenseAt(),
+                    e.getReceiptUrl(),
+                    e.getNote()
             );
         }).toList();
 

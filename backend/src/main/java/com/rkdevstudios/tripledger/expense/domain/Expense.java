@@ -38,6 +38,15 @@ public class Expense {
     @Column(name = "expense_date", nullable = false)
     private LocalDate expenseDate;
 
+    @Column(name = "expense_at", nullable = false)
+    private Instant expenseAt = Instant.now();
+
+    @Column(name = "receipt_url", length = 512)
+    private String receiptUrl;
+
+    @Column(columnDefinition = "TEXT")
+    private String note;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -49,6 +58,11 @@ public class Expense {
 
     public Expense(String id, String workspaceId, String paidByUserId, Money money, String description,
                    String categoryId, LocalDate expenseDate) {
+        this(id, workspaceId, paidByUserId, money, description, categoryId, expenseDate, Instant.now(), null, null);
+    }
+
+    public Expense(String id, String workspaceId, String paidByUserId, Money money, String description,
+                   String categoryId, LocalDate expenseDate, Instant expenseAt, String receiptUrl, String note) {
         this.id = id;
         this.workspaceId = workspaceId;
         this.paidByUserId = paidByUserId;
@@ -56,6 +70,9 @@ public class Expense {
         this.description = description;
         this.categoryId = categoryId;
         this.expenseDate = expenseDate;
+        this.expenseAt = expenseAt != null ? expenseAt : Instant.now();
+        this.receiptUrl = receiptUrl;
+        this.note = note;
     }
 
     @PreUpdate
@@ -89,6 +106,15 @@ public class Expense {
 
     public LocalDate getExpenseDate() { return expenseDate; }
     public void setExpenseDate(LocalDate expenseDate) { this.expenseDate = expenseDate; }
+
+    public Instant getExpenseAt() { return expenseAt; }
+    public void setExpenseAt(Instant expenseAt) { this.expenseAt = expenseAt; }
+
+    public String getReceiptUrl() { return receiptUrl; }
+    public void setReceiptUrl(String receiptUrl) { this.receiptUrl = receiptUrl; }
+
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }

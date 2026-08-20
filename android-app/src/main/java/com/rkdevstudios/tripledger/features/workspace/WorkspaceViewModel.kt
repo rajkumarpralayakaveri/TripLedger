@@ -29,7 +29,8 @@ data class MockWorkspace(
     val plannedMemberCount: Int,
     val status: String,
     val membersCount: Int,
-    val contributionMode: String = "COMBINED"
+    val contributionMode: String = "COMBINED",
+    val createdBy: String? = null
 )
 
 data class MockContributionSummary(
@@ -39,7 +40,8 @@ data class MockContributionSummary(
     val planned: BigDecimal,
     val total: BigDecimal,
     val remaining: BigDecimal,
-    val status: String
+    val status: String,
+    val fronted: BigDecimal = BigDecimal.ZERO
 )
 
 data class MockFinancialSnapshot(
@@ -54,7 +56,9 @@ data class MockFinancialSnapshot(
 )
 
 class WorkspaceViewModel(
-    private val workspaceRepository: WorkspaceRepository
+    private val workspaceRepository: WorkspaceRepository,
+    val sessionManager: com.rkdevstudios.tripledger.core.auth.SessionManager? = null,
+    val paymentProofRepository: com.rkdevstudios.tripledger.features.workspace.data.PaymentProofRepository? = null
 ) : ViewModel() {
 
     private val _workspaces = MutableStateFlow<List<MockWorkspace>>(emptyList())
@@ -184,12 +188,23 @@ class WorkspaceViewModel(
             _isLoadingSummary.value = false
         }
         
-        // Mock loaders for secondary modules in this phase
-        _currentTimeline.value = _timelines.value[id] ?: emptyList()
+        refreshExpenseTimeline(id)
+
         _currentActivities.value = _activities.value[id] ?: emptyList()
         _currentBalances.value = _balances.value[id] ?: emptyList()
         _currentPlan.value = _plans.value[id]
         _currentHistory.value = _history.value[id] ?: emptyList()
+    }
+
+    fun refreshExpenseTimeline(id: String) {
+        viewModelScope.launch {
+            workspaceRepository.getExpenseTimeline(id).fold(
+                onSuccess = { groups ->
+                    _currentTimeline.value = groups
+                },
+                onFailure = { _ -> }
+            )
+        }
     }
 
     fun refreshFinancialSummary(id: String) {
@@ -352,54 +367,61 @@ class WorkspaceViewModel(
         }
     }
 
-    fun addMockExpense(
+    fun createExpense(
         workspaceId: String,
-        description: String,
+        paidByUserId: String,
         amount: BigDecimal,
         currency: String,
-        paidByName: String,
-        categoryName: String,
-        categoryColor: String,
-        categoryIcon: String
+        description: String,
+        categoryId: String,
+        expenseDate: LocalDate,
+        participantIds: List<String>,
+        expenseAt: String? = null,
+        receiptUrl: String? = null,
+        note: String? = null,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
     ) {
         if (_isSavingExpense.value) return
         _isSavingExpense.value = true
-        try {
-            val newItem = ExpenseItem(
-                id = "e_${System.currentTimeMillis()}",
-                description = description,
+        viewModelScope.launch {
+            workspaceRepository.createExpense(
+                workspaceId = workspaceId,
+                paidByUserId = paidByUserId,
                 amount = amount,
                 currency = currency,
-                paidByName = paidByName,
-                date = LocalDate.now(),
-                categoryName = categoryName,
-                categoryColor = categoryColor,
-                categoryIcon = categoryIcon
-            )
-
-            val currentGroups = _timelines.value[workspaceId] ?: emptyList()
-            val todayGroup = currentGroups.find { it.date == LocalDate.now() }
-
-            val updatedGroups = if (todayGroup != null) {
-                currentGroups.map {
-                    if (it.date == LocalDate.now()) it.copy(expenses = it.expenses + newItem) else it
+                description = description,
+                categoryId = categoryId,
+                expenseDate = expenseDate,
+                participantIds = participantIds,
+                expenseAt = expenseAt,
+                receiptUrl = receiptUrl,
+                note = note
+            ).fold(
+                onSuccess = {
+                    refreshExpenseTimeline(workspaceId)
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to save expense")
                 }
-            } else {
-                listOf(ExpenseTimelineGroup(LocalDate.now(), listOf(newItem))) + currentGroups
-            }
-
-            _timelines.value = _timelines.value + (workspaceId to updatedGroups)
-
-            val newActivity = ActivityFeedItem(
-                id = "a_${System.currentTimeMillis()}",
-                message = "$paidByName added $description",
-                timestamp = "Just now"
             )
-            _activities.value = _activities.value + (workspaceId to (listOf(newActivity) + (_activities.value[workspaceId] ?: emptyList())))
-
-            selectWorkspace(workspaceId)
-        } finally {
             _isSavingExpense.value = false
+        }
+    }
+
+    fun uploadExpenseReceipt(
+        workspaceId: String,
+        fileBytes: ByteArray,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            paymentProofRepository?.uploadReceiptToCloudinary(workspaceId, fileBytes)?.fold(
+                onSuccess = { url -> onSuccess(url) },
+                onFailure = { err -> onError(err.message ?: "Failed to upload receipt") }
+            ) ?: onError("Upload repository unavailable")
         }
     }
 
@@ -440,6 +462,69 @@ class WorkspaceViewModel(
                 },
                 onFailure = { error ->
                     onError(error.message ?: "Failed to leave workspace")
+                }
+            )
+        }
+    }
+
+    fun removeMember(workspaceId: String, userId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            workspaceRepository.removeMember(workspaceId, userId).fold(
+                onSuccess = {
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to remove member")
+                }
+            )
+        }
+    }
+
+    fun updateWorkspace(
+        workspaceId: String,
+        name: String? = null,
+        description: String? = null,
+        startDate: LocalDate? = null,
+        endDate: LocalDate? = null,
+        budget: BigDecimal? = null,
+        plannedMemberCount: Int? = null,
+        contributionMode: String? = null,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            workspaceRepository.updateWorkspace(
+                workspaceId = workspaceId,
+                name = name,
+                description = description,
+                startDate = startDate,
+                endDate = endDate,
+                budget = budget,
+                plannedMemberCount = plannedMemberCount,
+                contributionMode = contributionMode
+            ).fold(
+                onSuccess = { updated ->
+                    _currentWorkspace.value = updated
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to update workspace")
+                }
+            )
+        }
+    }
+
+    fun archiveWorkspace(workspaceId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            workspaceRepository.archiveWorkspace(workspaceId).fold(
+                onSuccess = {
+                    loadWorkspaces()
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to archive workspace")
                 }
             )
         }

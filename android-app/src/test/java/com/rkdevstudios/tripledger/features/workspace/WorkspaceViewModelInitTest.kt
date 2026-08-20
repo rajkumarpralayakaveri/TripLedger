@@ -65,6 +65,48 @@ class WorkspaceViewModelInitTest {
         override suspend fun rejectPayment(workspaceId: String, paymentId: String, request: PaymentRejectionRequest): NetworkResponse<PaymentProofResponseDto> {
             throw UnsupportedOperationException("Not needed for init test")
         }
+
+        override suspend fun removeMember(workspaceId: String, userId: String): NetworkResponse<Unit> {
+            throw UnsupportedOperationException("Not needed for init test")
+        }
+
+        override suspend fun updateMemberPlannedContribution(
+            workspaceId: String,
+            userId: String,
+            request: com.rkdevstudios.tripledger.features.workspace.data.api.UpdatePlannedContributionRequestDto
+        ): NetworkResponse<Unit> {
+            throw UnsupportedOperationException("Not needed for init test")
+        }
+
+        override suspend fun updateMemberRole(
+            workspaceId: String,
+            userId: String,
+            request: com.rkdevstudios.tripledger.features.workspace.data.api.UpdateMemberRoleRequestDto
+        ): NetworkResponse<WorkspaceMemberDto> {
+            throw UnsupportedOperationException("Not needed for init test")
+        }
+
+        override suspend fun leaveWorkspace(workspaceId: String): NetworkResponse<Unit> {
+            throw UnsupportedOperationException("Not needed for init test")
+        }
+
+        override suspend fun updateWorkspace(
+            workspaceId: String,
+            request: com.rkdevstudios.tripledger.features.workspace.data.api.WorkspaceUpdateRequestDto
+        ): NetworkResponse<WorkspaceDto> {
+            throw UnsupportedOperationException("Not needed for init test")
+        }
+
+        override suspend fun getExpenseTimeline(workspaceId: String): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseTimelineResponseDto> {
+            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseTimelineResponseDto(emptyList()), null)
+        }
+
+        override suspend fun createExpense(
+            workspaceId: String,
+            request: com.rkdevstudios.tripledger.features.workspace.data.api.CreateExpenseRequestDto
+        ): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto> {
+            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto("e_1", workspaceId, request.paidByUserId, request.description, request.categoryId, request.expenseDate, request.expenseAt, request.receiptUrl, request.note), null)
+        }
     }
 
     @Test
