@@ -220,11 +220,19 @@ fun WorkspaceDetailsScreen(
                                         ) {
                                             Column {
                                                 Text(text = member.name, style = MaterialTheme.typography.titleMedium)
-                                                Text(
-                                                    text = member.role,
-                                                    style = MaterialTheme.typography.bodySmall,
-                                                    color = MaterialTheme.colorScheme.secondary
-                                                )
+                                                Spacer(modifier = Modifier.height(TripSpacing.XS))
+                                                val isAdmin = member.role == "ADMIN"
+                                                androidx.compose.material3.Surface(
+                                                    color = if (isAdmin) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                                                    shape = androidx.compose.foundation.shape.RoundedCornerShape(4.dp)
+                                                ) {
+                                                    Text(
+                                                        text = if (isAdmin) "ADMIN" else "MEMBER",
+                                                        style = MaterialTheme.typography.labelSmall,
+                                                        color = if (isAdmin) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                    )
+                                                }
                                             }
                                             Text(
                                                 text = member.status.replace("_", " "),

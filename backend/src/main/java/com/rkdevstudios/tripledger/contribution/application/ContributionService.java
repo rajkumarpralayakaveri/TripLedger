@@ -332,12 +332,8 @@ public class ContributionService {
     private void verifyAuthorized(String workspaceId, String userId) {
         WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseThrow(() -> new SecurityException("User is not a member of this workspace"));
-        switch (member.getRole()) {
-            case OWNER:
-            case ADMIN:
-                return;
-            default:
-                throw new SecurityException("Permission denied. OWNER or ADMIN role required.");
+        if (member.getRole() != com.rkdevstudios.tripledger.workspace.domain.MemberRole.ADMIN) {
+            throw new SecurityException("Permission denied. ADMIN role required.");
         }
     }
 

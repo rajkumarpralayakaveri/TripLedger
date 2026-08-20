@@ -121,7 +121,7 @@ class WorkspaceServiceTest {
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(workspace));
 
         // Workspace has plannedMemberCount = 1, and already has 1 member
-        WorkspaceMember existingMember = new WorkspaceMember(workspaceId, "usr_123", MemberRole.OWNER);
+        WorkspaceMember existingMember = new WorkspaceMember(workspaceId, "usr_123", MemberRole.ADMIN);
         when(workspaceMemberRepository.findByWorkspaceId(workspaceId)).thenReturn(Arrays.asList(existingMember));
 
         assertThrows(IllegalStateException.class, () -> {
@@ -130,7 +130,7 @@ class WorkspaceServiceTest {
     }
 
     @Test
-    void testArchiveWorkspace_ForbiddenForNonOwner() {
+    void testArchiveWorkspace_ForbiddenForNonAdmin() {
         String wsId = "ws_111";
         String callerId = "usr_456";
 
@@ -159,7 +159,7 @@ class WorkspaceServiceTest {
         workspace.setContributionMode(ContributionMode.COMBINED);
 
         when(workspaceRepository.findById(wsId)).thenReturn(Optional.of(workspace));
-        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(new WorkspaceMember(wsId, callerId, MemberRole.OWNER)));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(new WorkspaceMember(wsId, callerId, MemberRole.ADMIN)));
 
         // Mock existing financial activity
         when(contributionEntryRepository.findByWorkspaceId(wsId)).thenReturn(Collections.singletonList(new com.rkdevstudios.tripledger.contribution.domain.ContributionEntry()));
@@ -172,10 +172,10 @@ class WorkspaceServiceTest {
     @Test
     void testRemoveMember_BlockedWhenFinancialActivityExists() {
         String wsId = "ws_111";
-        String callerId = "usr_owner";
+        String callerId = "usr_admin";
         String targetId = "usr_member";
 
-        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.OWNER);
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
         WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.MEMBER);
 
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
@@ -186,6 +186,71 @@ class WorkspaceServiceTest {
 
         assertThrows(IllegalStateException.class, () -> {
             workspaceService.removeMember(wsId, targetId, callerId);
+        });
+    }
+
+    @Test
+    void testUpdateMemberRole_AdminCanPromoteMemberToAdmin() {
+        String wsId = "ws_111";
+        String callerId = "usr_admin";
+        String targetId = "usr_member";
+
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
+        WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.MEMBER);
+
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
+        when(workspaceMemberRepository.save(any(WorkspaceMember.class))).thenAnswer(i -> i.getArgument(0));
+
+        WorkspaceMember updated = workspaceService.updateMemberRole(wsId, targetId, MemberRole.ADMIN, callerId);
+
+        assertEquals(MemberRole.ADMIN, updated.getRole());
+    }
+
+    @Test
+    void testUpdateMemberRole_CannotPromoteOrDemoteSelf() {
+        String wsId = "ws_111";
+        String callerId = "usr_admin";
+
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            workspaceService.updateMemberRole(wsId, callerId, MemberRole.MEMBER, callerId);
+        });
+    }
+
+    @Test
+    void testRemoveMember_AdminCannotRemoveAnotherAdmin() {
+        String wsId = "ws_111";
+        String callerId = "usr_admin1";
+        String targetId = "usr_admin2";
+
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
+        WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.ADMIN);
+
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
+
+        assertThrows(SecurityException.class, () -> {
+            workspaceService.removeMember(wsId, targetId, callerId);
+        });
+    }
+
+    @Test
+    void testLeaveWorkspace_LastAdminCannotLeavePopulatedWorkspace() {
+        String wsId = "ws_111";
+        String callerId = "usr_admin1";
+        String otherMemberId = "usr_member2";
+
+        WorkspaceMember admin = new WorkspaceMember(wsId, callerId, MemberRole.ADMIN);
+        WorkspaceMember member = new WorkspaceMember(wsId, otherMemberId, MemberRole.MEMBER);
+
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(admin));
+        when(workspaceMemberRepository.findByWorkspaceId(wsId)).thenReturn(Arrays.asList(admin, member));
+
+        assertThrows(IllegalStateException.class, () -> {
+            workspaceService.leaveWorkspace(wsId, callerId);
         });
     }
 }

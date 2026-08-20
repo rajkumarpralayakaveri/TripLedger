@@ -58,8 +58,8 @@ public class PaymentProofService {
     private void verifyAuthorized(String workspaceId, String userId) {
         WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseThrow(() -> new SecurityException("User is not a member of this workspace"));
-        if (member.getRole() != MemberRole.OWNER && member.getRole() != MemberRole.ADMIN) {
-            throw new SecurityException("Permission denied. OWNER or ADMIN role required.");
+        if (member.getRole() != MemberRole.ADMIN) {
+            throw new SecurityException("Permission denied. ADMIN role required.");
         }
     }
 
@@ -161,7 +161,7 @@ public class PaymentProofService {
                 .orElseThrow(() -> new SecurityException("Caller membership not found"));
 
         List<PaymentProof> proofs;
-        if (caller.getRole() == MemberRole.OWNER || caller.getRole() == MemberRole.ADMIN) {
+        if (caller.getRole() == MemberRole.ADMIN) {
             proofs = paymentProofRepository.findByWorkspaceId(workspaceId);
         } else {
             proofs = paymentProofRepository.findByWorkspaceIdAndUserId(workspaceId, callerUserId);

@@ -116,6 +116,24 @@ public class WorkspaceController {
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
+    @PutMapping("/{id}/members/{userId}/role")
+    public ResponseEntity<ApiResponse<WorkspaceMember>> updateWorkspaceMemberRole(
+            @PathVariable("id") String id,
+            @PathVariable("userId") String userId,
+            @Valid @RequestBody UpdateMemberRoleRequest request
+    ) {
+        User user = getAuthenticatedUser();
+        WorkspaceMember updated = workspaceService.updateMemberRole(id, userId, request.role(), user.getId());
+        return ResponseEntity.ok(ApiResponse.success(updated));
+    }
+
+    @PostMapping("/{id}/leave")
+    public ResponseEntity<ApiResponse<Void>> leaveWorkspace(@PathVariable("id") String id) {
+        User user = getAuthenticatedUser();
+        workspaceService.leaveWorkspace(id, user.getId());
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     // Invites
     @PostMapping("/{id}/invite")
     public ResponseEntity<ApiResponse<InviteToken>> createInviteToken(

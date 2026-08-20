@@ -402,4 +402,46 @@ class WorkspaceViewModel(
             _isSavingExpense.value = false
         }
     }
+
+    fun updateMemberPlannedContribution(workspaceId: String, userId: String, plannedAmount: BigDecimal, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            workspaceRepository.updateMemberPlannedContribution(workspaceId, userId, plannedAmount).fold(
+                onSuccess = {
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to update planned contribution")
+                }
+            )
+        }
+    }
+
+    fun updateMemberRole(workspaceId: String, userId: String, role: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            workspaceRepository.updateMemberRole(workspaceId, userId, role).fold(
+                onSuccess = {
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to update member role")
+                }
+            )
+        }
+    }
+
+    fun leaveWorkspace(workspaceId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            workspaceRepository.leaveWorkspace(workspaceId).fold(
+                onSuccess = {
+                    loadWorkspaces()
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to leave workspace")
+                }
+            )
+        }
+    }
 }

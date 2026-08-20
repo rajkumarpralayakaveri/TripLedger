@@ -101,9 +101,9 @@ public class WorkspaceService {
 
         Workspace savedWorkspace = workspaceRepository.save(workspace);
 
-        // Creator automatically joins as OWNER
-        WorkspaceMember ownerMember = new WorkspaceMember(workspaceId, createdBy, MemberRole.OWNER);
-        workspaceMemberRepository.save(ownerMember);
+        // Creator automatically joins as ADMIN
+        WorkspaceMember adminMember = new WorkspaceMember(workspaceId, createdBy, MemberRole.ADMIN);
+        workspaceMemberRepository.save(adminMember);
 
         // Initialize planned contributions for the creator
         contributionService.initializeContributions(
@@ -136,8 +136,8 @@ public class WorkspaceService {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
 
-        // Validate caller permissions (OWNER or ADMIN)
-        verifyRole(workspaceId, callerUserId, MemberRole.OWNER, MemberRole.ADMIN);
+        // Validate caller permissions (ADMIN)
+        verifyRole(workspaceId, callerUserId, MemberRole.ADMIN);
 
         // Contribution Mode Lock Validation
         if (newMode != null && newMode != workspace.getContributionMode()) {
@@ -208,8 +208,8 @@ public class WorkspaceService {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
 
-        // Only OWNER can archive a workspace
-        verifyRole(workspaceId, callerUserId, MemberRole.OWNER);
+        // ADMIN can archive a workspace
+        verifyRole(workspaceId, callerUserId, MemberRole.ADMIN);
 
         validateStateTransition(workspace.getStatus(), WorkspaceStatus.ARCHIVED, callerUserId, workspaceId);
         workspace.setStatus(WorkspaceStatus.ARCHIVED);
@@ -223,8 +223,8 @@ public class WorkspaceService {
             int maxUses,
             long expirationSeconds
     ) {
-        // OWNER or ADMIN can create invites
-        verifyRole(workspaceId, callerUserId, MemberRole.OWNER, MemberRole.ADMIN);
+        // ADMIN can create invites
+        verifyRole(workspaceId, callerUserId, MemberRole.ADMIN);
 
         String token = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         Instant expiresAt = Instant.now().plusSeconds(expirationSeconds);
@@ -299,20 +299,15 @@ public class WorkspaceService {
         WorkspaceMember targetMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Member not found"));
 
-        if (targetMember.getRole() == MemberRole.OWNER) {
-            throw new IllegalArgumentException("OWNER cannot be removed from the workspace");
-        }
-
-        // OWNER can remove anyone. ADMIN can remove MEMBERS, but not other ADMINS/OWNER.
         WorkspaceMember callerMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerUserId)
                 .orElseThrow(() -> new IllegalArgumentException("Caller is not a member of this workspace"));
 
-        if (callerMember.getRole() == MemberRole.MEMBER) {
-            throw new SecurityException("Permission denied");
+        if (callerMember.getRole() != MemberRole.ADMIN) {
+            throw new SecurityException("Permission denied. Only ADMINs can remove members.");
         }
 
-        if (callerMember.getRole() == MemberRole.ADMIN && targetMember.getRole() == MemberRole.ADMIN) {
-            throw new SecurityException("ADMIN cannot remove another ADMIN");
+        if (targetMember.getRole() == MemberRole.ADMIN) {
+            throw new SecurityException("ADMIN cannot remove another ADMIN.");
         }
 
         // Prevent removing member if financial activity exists for this member
@@ -326,14 +321,55 @@ public class WorkspaceService {
         workspaceMemberRepository.delete(targetMember);
     }
 
+    @Transactional
+    public WorkspaceMember updateMemberRole(String workspaceId, String targetUserId, MemberRole newRole, String callerUserId) {
+        verifyRole(workspaceId, callerUserId, MemberRole.ADMIN);
+
+        WorkspaceMember targetMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        if (targetUserId.equals(callerUserId)) {
+            throw new IllegalArgumentException("ADMIN cannot promote or demote themselves");
+        }
+
+        targetMember.setRole(newRole);
+        return workspaceMemberRepository.save(targetMember);
+    }
+
+    @Transactional
+    public void leaveWorkspace(String workspaceId, String callerUserId) {
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerUserId)
+                .orElseThrow(() -> new IllegalArgumentException("User is not a member of this workspace"));
+
+        List<WorkspaceMember> allMembers = workspaceMemberRepository.findByWorkspaceId(workspaceId);
+
+        // If caller is ADMIN, ensure caller is not the last ADMIN when other members exist
+        if (member.getRole() == MemberRole.ADMIN) {
+            long adminCount = allMembers.stream().filter(m -> m.getRole() == MemberRole.ADMIN).count();
+            if (adminCount <= 1 && allMembers.size() > 1) {
+                throw new IllegalStateException("Last ADMIN cannot leave the workspace while other members remain. Promote another member to ADMIN first.");
+            }
+        }
+
+        // Prevent leaving if financial activity exists for this member
+        var entries = contributionEntryRepository.findByWorkspaceIdAndUserId(workspaceId, callerUserId);
+        var expenses = expenseRepository.findByWorkspaceIdAndStatusNot(workspaceId, com.rkdevstudios.tripledger.expense.domain.ExpenseStatus.DELETED)
+                .stream().filter(e -> e.getPaidByUserId().equals(callerUserId)).toList();
+        if (!entries.isEmpty() || !expenses.isEmpty()) {
+            throw new IllegalStateException("Cannot leave workspace because financial contributions or expenses are recorded for this user");
+        }
+
+        workspaceMemberRepository.delete(member);
+    }
+
     public List<WorkspaceMember> getWorkspaceMembers(String workspaceId, String callerUserId) {
         // Caller must be a member
-        verifyRole(workspaceId, callerUserId, MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER);
+        verifyRole(workspaceId, callerUserId, MemberRole.ADMIN, MemberRole.MEMBER);
         return workspaceMemberRepository.findByWorkspaceId(workspaceId);
     }
 
     public Workspace getWorkspaceById(String workspaceId, String callerUserId) {
-        verifyRole(workspaceId, callerUserId, MemberRole.OWNER, MemberRole.ADMIN, MemberRole.MEMBER);
+        verifyRole(workspaceId, callerUserId, MemberRole.ADMIN, MemberRole.MEMBER);
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new IllegalArgumentException("Workspace not found"));
         int count = workspaceMemberRepository.findByWorkspaceId(workspaceId).size();

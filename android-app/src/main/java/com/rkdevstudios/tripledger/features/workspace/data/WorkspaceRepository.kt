@@ -177,4 +177,34 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
             Result.failure(e)
         }
     }
+
+    suspend fun updateMemberRole(workspaceId: String, userId: String, role: String): Result<Unit> {
+        return try {
+            val response = workspaceApiService.updateMemberRole(
+                workspaceId,
+                userId,
+                com.rkdevstudios.tripledger.features.workspace.data.api.UpdateMemberRoleRequestDto(role)
+            )
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to update member role"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun leaveWorkspace(workspaceId: String): Result<Unit> {
+        return try {
+            val response = workspaceApiService.leaveWorkspace(workspaceId)
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to leave workspace"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

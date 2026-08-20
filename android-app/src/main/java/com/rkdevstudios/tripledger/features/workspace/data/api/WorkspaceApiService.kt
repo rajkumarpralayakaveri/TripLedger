@@ -74,7 +74,23 @@ interface WorkspaceApiService {
         @Path("userId") userId: String,
         @retrofit2.http.Body request: UpdatePlannedContributionRequestDto
     ): NetworkResponse<Unit>
+
+    @retrofit2.http.PUT("api/v1/workspaces/{id}/members/{userId}/role")
+    suspend fun updateMemberRole(
+        @Path("id") workspaceId: String,
+        @Path("userId") userId: String,
+        @retrofit2.http.Body request: UpdateMemberRoleRequestDto
+    ): NetworkResponse<WorkspaceMemberDto>
+
+    @retrofit2.http.POST("api/v1/workspaces/{id}/leave")
+    suspend fun leaveWorkspace(
+        @Path("id") workspaceId: String
+    ): NetworkResponse<Unit>
 }
+
+data class UpdateMemberRoleRequestDto(
+    val role: String
+)
 
 data class WorkspaceCreateRequestDto(
     val name: String,

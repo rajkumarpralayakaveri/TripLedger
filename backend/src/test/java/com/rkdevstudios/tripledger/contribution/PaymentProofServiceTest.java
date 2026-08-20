@@ -144,7 +144,7 @@ class PaymentProofServiceTest {
         String ownerId = "usr_owner";
         String memberId = "usr_member";
 
-        WorkspaceMember owner = new WorkspaceMember(workspaceId, ownerId, MemberRole.OWNER);
+        WorkspaceMember owner = new WorkspaceMember(workspaceId, ownerId, MemberRole.ADMIN);
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, ownerId))
                 .thenReturn(Optional.of(owner));
 

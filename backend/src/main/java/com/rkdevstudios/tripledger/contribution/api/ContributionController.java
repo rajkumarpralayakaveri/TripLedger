@@ -171,8 +171,8 @@ public class ContributionController {
         WorkspaceMember callerMember = workspaceMemberRepository.findByWorkspaceIdAndUserId(id, user.getId())
                 .orElseThrow(() -> new SecurityException("User is not a member of this workspace"));
 
-        if (callerMember.getRole() != com.rkdevstudios.tripledger.workspace.domain.MemberRole.OWNER) {
-            throw new SecurityException("Only the workspace OWNER can modify the contribution strategy");
+        if (callerMember.getRole() != com.rkdevstudios.tripledger.workspace.domain.MemberRole.ADMIN) {
+            throw new SecurityException("Only a workspace ADMIN can modify the contribution strategy");
         }
 
         workspace.setContributionStrategy(request.strategy());

@@ -64,7 +64,7 @@ class ExpenseServiceTest {
         Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, payerId);
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
 
-        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.OWNER);
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.ADMIN);
         WorkspaceMember m2 = new WorkspaceMember(workspaceId, "usr_2", MemberRole.MEMBER);
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_1")).thenReturn(Optional.of(m1));
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_2")).thenReturn(Optional.of(m2));
@@ -101,7 +101,7 @@ class ExpenseServiceTest {
         Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, payerId);
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
 
-        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.OWNER);
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.ADMIN);
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_1")).thenReturn(Optional.of(m1));
 
         assertThrows(IllegalArgumentException.class, () -> {
@@ -124,7 +124,7 @@ class ExpenseServiceTest {
         Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, payerId);
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
 
-        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.OWNER);
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.ADMIN);
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_1")).thenReturn(Optional.of(m1));
 
         assertThrows(IllegalArgumentException.class, () -> {
@@ -145,7 +145,7 @@ class ExpenseServiceTest {
         expense.setStatus(ExpenseStatus.UNSETTLED);
         when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
 
-        WorkspaceMember m1 = new WorkspaceMember(workspaceId, payerId, MemberRole.OWNER);
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, payerId, MemberRole.ADMIN);
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, payerId)).thenReturn(Optional.of(m1));
 
         when(expenseRepository.save(any(Expense.class))).thenAnswer(invocation -> invocation.getArgument(0));

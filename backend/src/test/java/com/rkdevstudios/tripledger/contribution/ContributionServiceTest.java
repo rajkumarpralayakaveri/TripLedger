@@ -184,7 +184,7 @@ class ContributionServiceTest {
         String workspaceId = "ws_1";
         BigDecimal budget = BigDecimal.valueOf(50000);
 
-        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.OWNER);
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, "usr_1", MemberRole.ADMIN);
         WorkspaceMember m2 = new WorkspaceMember(workspaceId, "usr_2", MemberRole.MEMBER);
         when(workspaceMemberRepository.findByWorkspaceId(workspaceId)).thenReturn(Arrays.asList(m1, m2));
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, "usr_1")).thenReturn(Optional.of(m1));
@@ -338,9 +338,9 @@ class ContributionServiceTest {
         String targetUser = "usr_target";
         String callerUser = "usr_owner";
 
-        // Mock caller is OWNER
-        WorkspaceMember ownerMember = new WorkspaceMember(workspaceId, callerUser, MemberRole.OWNER);
-        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerUser)).thenReturn(Optional.of(ownerMember));
+        // Mock caller is ADMIN
+        WorkspaceMember adminMember = new WorkspaceMember(workspaceId, callerUser, MemberRole.ADMIN);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerUser)).thenReturn(Optional.of(adminMember));
 
         // Mock user has already contributed 4000 cash
         ContributionEntry entry = new ContributionEntry("e1", workspaceId, targetUser, ContributionEntryType.CASH, BigDecimal.valueOf(4000), "Cash", null);
