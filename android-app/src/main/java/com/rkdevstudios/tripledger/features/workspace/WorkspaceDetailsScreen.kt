@@ -79,7 +79,7 @@ fun WorkspaceDetailsScreen(
         verticalArrangement = Arrangement.spacedBy(TripSpacing.M)
     ) {
         workspace?.let { ws ->
-            // Header Row with Title, Role Badge, and Overflow Menu (if Admin)
+            // Header Row with Title
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -91,33 +91,6 @@ fun WorkspaceDetailsScreen(
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                }
-
-                if (isCallerAdmin) {
-                    Box {
-                        IconButton(onClick = { showMenu = true }) {
-                            Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Trip Menu")
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Edit Trip") },
-                                onClick = {
-                                    showMenu = false
-                                    showEditTripDialog = true
-                                }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Archive Trip") },
-                                onClick = {
-                                    showMenu = false
-                                    showArchiveDialog = true
-                                }
-                            )
-                        }
-                    }
                 }
             }
 
@@ -187,8 +160,40 @@ fun WorkspaceDetailsScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         verticalArrangement = Arrangement.spacedBy(TripSpacing.S)
                                     ) {
-                                        // Budget Section
-                                        Text(text = "Budget Ledger", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary)
+                                        // Budget Section Title Row with Overflow Menu
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(text = "Budget Ledger", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.secondary)
+                                            if (isCallerAdmin) {
+                                                Box {
+                                                    IconButton(onClick = { showMenu = true }) {
+                                                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Trip Menu")
+                                                    }
+                                                    DropdownMenu(
+                                                        expanded = showMenu,
+                                                        onDismissRequest = { showMenu = false }
+                                                    ) {
+                                                        DropdownMenuItem(
+                                                            text = { Text("Edit Trip") },
+                                                            onClick = {
+                                                                showMenu = false
+                                                                showEditTripDialog = true
+                                                            }
+                                                        )
+                                                        DropdownMenuItem(
+                                                            text = { Text("Archive Trip") },
+                                                            onClick = {
+                                                                showMenu = false
+                                                                showArchiveDialog = true
+                                                            }
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween
@@ -375,11 +380,13 @@ fun WorkspaceDetailsScreen(
                     }
                 }
 
+            if (pullToRefreshState.isRefreshing || pullToRefreshState.progress > 0f) {
                 PullToRefreshContainer(
                     state = pullToRefreshState,
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             }
+        }
 
             // Bottom Navigation & Actions
             Column(

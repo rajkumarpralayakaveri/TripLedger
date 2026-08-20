@@ -12,7 +12,8 @@ import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
 @Composable
 fun JoinWorkspaceScreen(
     viewModel: WorkspaceViewModel,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onJoinSuccess: (String) -> Unit = { onNavigateBack() }
 ) {
     var inviteToken by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -65,7 +66,7 @@ fun JoinWorkspaceScreen(
                     errorMessage = null
                     viewModel.joinWorkspace(
                         inviteToken = inviteToken,
-                        onSuccess = onNavigateBack,
+                        onSuccess = { wsId -> onJoinSuccess(wsId) },
                         onError = { errorMessage = it }
                     )
                 },

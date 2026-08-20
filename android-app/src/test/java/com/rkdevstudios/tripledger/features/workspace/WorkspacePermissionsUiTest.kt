@@ -39,8 +39,13 @@ class WorkspacePermissionsUiTest {
         override suspend fun createInviteToken(workspaceId: String, request: InviteRequestDto): NetworkResponse<InviteTokenDto> =
             throw UnsupportedOperationException()
 
-        override suspend fun joinWorkspace(request: JoinRequestDto): NetworkResponse<WorkspaceMemberDto> =
-            throw UnsupportedOperationException()
+        override suspend fun joinWorkspace(request: JoinRequestDto): NetworkResponse<WorkspaceMemberDto> {
+            return if (request.inviteToken == "valid_token_123") {
+                NetworkResponse(true, WorkspaceMemberDto("ws_joined_1", "usr_new", "MEMBER"), null)
+            } else {
+                NetworkResponse(false, null, com.rkdevstudios.tripledger.core.network.ApiError("400", "Invalid or expired invitation token"))
+            }
+        }
 
         override suspend fun createWorkspace(request: WorkspaceCreateRequestDto): NetworkResponse<WorkspaceDto> =
             throw UnsupportedOperationException()
@@ -193,6 +198,30 @@ class WorkspacePermissionsUiTest {
             val firstExpense = groups.first().expenses.first()
             assertEquals("https://cloudinary.com/receipt.jpg", firstExpense.receiptUrl)
             assertEquals("2026-08-20T10:00:00Z", firstExpense.expenseAt)
+        }
+    }
+
+    @Test
+    fun joinWorkspace_successfulJoin_assignsMemberRoleAndReturnsWorkspaceId() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.joinWorkspace("valid_token_123")
+            assertTrue(result.isSuccess)
+            assertEquals("ws_joined_1", result.getOrThrow())
+        }
+    }
+
+    @Test
+    fun joinWorkspace_invalidInviteToken_returnsError() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.joinWorkspace("invalid_token")
+            assertTrue(result.isFailure)
+            assertEquals("Invalid or expired invitation token", result.exceptionOrNull()?.message)
         }
     }
 }

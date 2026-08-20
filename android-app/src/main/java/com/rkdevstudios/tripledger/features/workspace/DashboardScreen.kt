@@ -34,9 +34,6 @@ fun DashboardScreen(
     val error by viewModel.workspacesError.collectAsState()
     val isRefreshing by viewModel.isRefreshingWorkspaces.collectAsState()
     val serverStatus by com.rkdevstudios.tripledger.core.network.ServerState.status.collectAsState()
-    LaunchedEffect(Unit) {
-        viewModel.loadWorkspaces()
-    }
 
     val pullToRefreshState = rememberPullToRefreshState()
     if (pullToRefreshState.isRefreshing) {
@@ -50,6 +47,10 @@ fun DashboardScreen(
         } else {
             pullToRefreshState.endRefresh()
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.loadWorkspaces()
     }
 
     Column(
@@ -155,10 +156,19 @@ fun DashboardScreen(
                         modifier = Modifier.padding(bottom = TripSpacing.L)
                     )
                     Row(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
                     ) {
-                        TripButton(text = "Create Trip", onClick = onCreateWorkspace)
-                        TripButton(text = "Join Trip", onClick = onJoinWorkspace)
+                        TripButton(
+                            text = "Create Trip",
+                            onClick = onCreateWorkspace,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TripButton(
+                            text = "Join Trip",
+                            onClick = onJoinWorkspace,
+                            modifier = Modifier.weight(1f)
+                        )
                     }
                 }
             } else {
@@ -228,10 +238,12 @@ fun DashboardScreen(
                 }
             }
 
-            PullToRefreshContainer(
-                state = pullToRefreshState,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
+            if (pullToRefreshState.isRefreshing || pullToRefreshState.progress > 0f) {
+                PullToRefreshContainer(
+                    state = pullToRefreshState,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+            }
         }
 
         if (workspaces.isNotEmpty()) {

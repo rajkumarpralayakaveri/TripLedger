@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.rkdevstudios.tripledger.core.designsystem.components.TripButton
 import com.rkdevstudios.tripledger.core.designsystem.components.TripCard
 import com.rkdevstudios.tripledger.core.designsystem.theme.TripSpacing
@@ -34,20 +35,11 @@ fun ExpenseTimelineScreen(
             .padding(TripSpacing.M),
         verticalArrangement = Arrangement.spacedBy(TripSpacing.M)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "Trip Timeline",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            TripButton(
-                text = "Activities",
-                onClick = onNavigateToActivities
-            )
-        }
+        Text(
+            text = "Trip Timeline",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
 
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -148,20 +140,34 @@ fun ExpenseTimelineScreen(
             }
         }
 
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
+            verticalArrangement = Arrangement.spacedBy(TripSpacing.S)
         ) {
-            TripButton(
-                text = "Back",
-                onClick = onNavigateBack,
-                modifier = Modifier.weight(1f)
-            )
-            TripButton(
-                text = "Add Expense",
-                onClick = onAddExpense,
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
+            ) {
+                TripButton(
+                    text = "Back",
+                    onClick = onNavigateBack,
+                    modifier = Modifier.weight(1f)
+                )
+                TripButton(
+                    text = "Add Expense",
+                    onClick = onAddExpense,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            androidx.compose.material3.OutlinedButton(
+                onClick = onNavigateToActivities,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text("View Activity Feed", style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }

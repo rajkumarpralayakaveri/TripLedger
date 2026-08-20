@@ -320,14 +320,14 @@ class WorkspaceViewModel(
         }
     }
 
-    fun joinWorkspace(inviteToken: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+    fun joinWorkspace(inviteToken: String, onSuccess: (String) -> Unit = {}, onError: (String) -> Unit = {}) {
         if (_isJoiningWorkspace.value) return
         _isJoiningWorkspace.value = true
         viewModelScope.launch {
             workspaceRepository.joinWorkspace(inviteToken).fold(
-                onSuccess = {
+                onSuccess = { workspaceId ->
                     loadWorkspaces()
-                    onSuccess()
+                    onSuccess(workspaceId)
                 },
                 onFailure = { error ->
                     val friendlyMsg = when (error) {

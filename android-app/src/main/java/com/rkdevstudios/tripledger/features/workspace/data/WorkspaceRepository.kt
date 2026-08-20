@@ -76,11 +76,11 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
             Result.failure(e)
         }
     }
-    suspend fun joinWorkspace(inviteToken: String): Result<Unit> {
+    suspend fun joinWorkspace(inviteToken: String): Result<String> {
         return try {
             val response = workspaceApiService.joinWorkspace(com.rkdevstudios.tripledger.features.workspace.data.api.JoinRequestDto(inviteToken))
-            if (response.success) {
-                Result.success(Unit)
+            if (response.success && response.data != null) {
+                Result.success(response.data.workspaceId)
             } else {
                 Result.failure(Exception(response.error?.message ?: "Failed to join workspace"))
             }
