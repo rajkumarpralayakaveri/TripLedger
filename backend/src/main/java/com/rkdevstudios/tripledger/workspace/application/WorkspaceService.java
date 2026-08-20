@@ -23,17 +23,23 @@ public class WorkspaceService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final InviteTokenRepository inviteTokenRepository;
     private final ContributionService contributionService;
+    private final com.rkdevstudios.tripledger.contribution.domain.ContributionEntryRepository contributionEntryRepository;
+    private final com.rkdevstudios.tripledger.expense.domain.ExpenseRepository expenseRepository;
 
     public WorkspaceService(
             WorkspaceRepository workspaceRepository,
             WorkspaceMemberRepository workspaceMemberRepository,
             InviteTokenRepository inviteTokenRepository,
-            @Lazy ContributionService contributionService
+            @Lazy ContributionService contributionService,
+            com.rkdevstudios.tripledger.contribution.domain.ContributionEntryRepository contributionEntryRepository,
+            com.rkdevstudios.tripledger.expense.domain.ExpenseRepository expenseRepository
     ) {
         this.workspaceRepository = workspaceRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.inviteTokenRepository = inviteTokenRepository;
         this.contributionService = contributionService;
+        this.contributionEntryRepository = contributionEntryRepository;
+        this.expenseRepository = expenseRepository;
     }
 
     @Transactional
@@ -49,7 +55,7 @@ public class WorkspaceService {
     ) {
         return createWorkspace(
                 name, description, startDate, endDate, baseCurrency, budget, plannedMemberCount, createdBy,
-                ContributionStrategy.EQUAL, null, null
+                ContributionStrategy.EQUAL, ContributionMode.COMBINED, null, null
         );
     }
 
@@ -64,6 +70,7 @@ public class WorkspaceService {
             Integer plannedMemberCount,
             String createdBy,
             ContributionStrategy strategy,
+            ContributionMode contributionMode,
             Map<String, BigDecimal> customAmounts,
             Map<String, BigDecimal> percentages
     ) {
@@ -90,6 +97,7 @@ public class WorkspaceService {
         );
         workspace.setStatus(WorkspaceStatus.PLANNING);
         workspace.setContributionStrategy(strategy != null ? strategy : ContributionStrategy.EQUAL);
+        workspace.setContributionMode(contributionMode != null ? contributionMode : ContributionMode.COMBINED);
 
         Workspace savedWorkspace = workspaceRepository.save(workspace);
 
@@ -122,6 +130,7 @@ public class WorkspaceService {
             BigDecimal budget,
             Integer plannedMemberCount,
             WorkspaceStatus targetStatus,
+            ContributionMode newMode,
             String callerUserId
     ) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
@@ -129,6 +138,16 @@ public class WorkspaceService {
 
         // Validate caller permissions (OWNER or ADMIN)
         verifyRole(workspaceId, callerUserId, MemberRole.OWNER, MemberRole.ADMIN);
+
+        // Contribution Mode Lock Validation
+        if (newMode != null && newMode != workspace.getContributionMode()) {
+            var entries = contributionEntryRepository.findByWorkspaceId(workspaceId);
+            var expenses = expenseRepository.findByWorkspaceIdAndStatusNot(workspaceId, com.rkdevstudios.tripledger.expense.domain.ExpenseStatus.DELETED);
+            if (!entries.isEmpty() || !expenses.isEmpty()) {
+                throw new IllegalStateException("Contribution mode cannot be changed after financial activity (contributions or expenses) has started.");
+            }
+            workspace.setContributionMode(newMode);
+        }
 
         // Validate state transitions
         if (targetStatus != null && targetStatus != workspace.getStatus()) {
@@ -294,6 +313,14 @@ public class WorkspaceService {
 
         if (callerMember.getRole() == MemberRole.ADMIN && targetMember.getRole() == MemberRole.ADMIN) {
             throw new SecurityException("ADMIN cannot remove another ADMIN");
+        }
+
+        // Prevent removing member if financial activity exists for this member
+        var entries = contributionEntryRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId);
+        var expenses = expenseRepository.findByWorkspaceIdAndStatusNot(workspaceId, com.rkdevstudios.tripledger.expense.domain.ExpenseStatus.DELETED)
+                .stream().filter(e -> e.getPaidByUserId().equals(targetUserId)).toList();
+        if (!entries.isEmpty() || !expenses.isEmpty()) {
+            throw new IllegalStateException("Cannot remove member because financial contributions or expenses are recorded for this user");
         }
 
         workspaceMemberRepository.delete(targetMember);

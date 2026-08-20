@@ -28,7 +28,8 @@ data class MockWorkspace(
     val budget: BigDecimal?,
     val plannedMemberCount: Int,
     val status: String,
-    val membersCount: Int
+    val membersCount: Int,
+    val contributionMode: String = "COMBINED"
 )
 
 data class MockContributionSummary(
@@ -276,12 +277,12 @@ class WorkspaceViewModel(
         baseCurrency: String,
         budget: BigDecimal?,
         plannedMemberCount: Int,
-        onSuccess: () -> Unit = {},
-        onError: (String) -> Unit = {}
+        contributionMode: String = "COMBINED",
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
     ) {
-        if (_isCreatingWorkspace.value) return
-        _isCreatingWorkspace.value = true
         viewModelScope.launch {
+            _isCreatingWorkspace.value = true
             workspaceRepository.createWorkspace(
                 name = name,
                 description = description,
@@ -289,19 +290,15 @@ class WorkspaceViewModel(
                 endDate = endDate,
                 baseCurrency = baseCurrency,
                 budget = budget,
-                plannedMemberCount = plannedMemberCount
+                plannedMemberCount = plannedMemberCount,
+                contributionMode = contributionMode
             ).fold(
-                onSuccess = { newWs ->
-                    _workspaces.value = _workspaces.value + newWs
+                onSuccess = {
+                    loadWorkspaces()
                     onSuccess()
                 },
                 onFailure = { error ->
-                    val friendlyMsg = when (error) {
-                        is java.net.UnknownHostException -> "No internet connection. Please try again."
-                        is java.net.SocketTimeoutException -> "Request timed out. Please try again."
-                        else -> error.message ?: "Failed to create workspace"
-                    }
-                    onError(friendlyMsg)
+                    onError(error.message ?: "Failed to create workspace")
                 }
             )
             _isCreatingWorkspace.value = false

@@ -23,7 +23,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         budget = dto.budget,
                         plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
-                        membersCount = dto.memberCount
+                        membersCount = dto.memberCount,
+                        contributionMode = dto.contributionMode
                     )
                 }
                 Result.success(list)
@@ -106,7 +107,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
         endDate: LocalDate,
         baseCurrency: String,
         budget: java.math.BigDecimal?,
-        plannedMemberCount: Int
+        plannedMemberCount: Int,
+        contributionMode: String = "COMBINED"
     ): Result<MockWorkspace> {
         return try {
             val response = workspaceApiService.createWorkspace(
@@ -117,7 +119,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                     endDate = endDate.toString(),
                     baseCurrency = baseCurrency,
                     budget = budget,
-                    plannedMemberCount = plannedMemberCount
+                    plannedMemberCount = plannedMemberCount,
+                    contributionMode = contributionMode
                 )
             )
             if (response.success && response.data != null) {
@@ -133,11 +136,42 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         budget = dto.budget,
                         plannedMemberCount = dto.plannedMemberCount,
                         status = dto.status,
-                        membersCount = dto.memberCount
+                        membersCount = dto.memberCount,
+                        contributionMode = dto.contributionMode
                     )
                 )
             } else {
                 Result.failure(Exception(response.error?.message ?: "Failed to create workspace"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun removeMember(workspaceId: String, userId: String): Result<Unit> {
+        return try {
+            val response = workspaceApiService.removeMember(workspaceId, userId)
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to remove member"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateMemberPlannedContribution(workspaceId: String, userId: String, plannedAmount: java.math.BigDecimal): Result<Unit> {
+        return try {
+            val response = workspaceApiService.updateMemberPlannedContribution(
+                workspaceId,
+                userId,
+                com.rkdevstudios.tripledger.features.workspace.data.api.UpdatePlannedContributionRequestDto(plannedAmount)
+            )
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to update planned contribution"))
             }
         } catch (e: Exception) {
             Result.failure(e)

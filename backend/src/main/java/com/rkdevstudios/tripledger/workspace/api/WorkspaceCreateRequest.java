@@ -38,6 +38,7 @@ public record WorkspaceCreateRequest(
     Integer plannedMemberCount,
 
     ContributionStrategy contributionStrategy,
+    com.rkdevstudios.tripledger.workspace.domain.ContributionMode contributionMode,
     Map<String, BigDecimal> customAmounts,
     Map<String, BigDecimal> percentages
 ) {}

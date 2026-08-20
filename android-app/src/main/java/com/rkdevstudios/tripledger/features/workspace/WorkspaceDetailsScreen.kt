@@ -237,12 +237,18 @@ fun WorkspaceDetailsScreen(
                                             modifier = Modifier.fillMaxWidth(),
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
-                                            Text(text = "Contributed: ${CurrencyFormatter.formatMoney(member.total, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
-                                            Text(text = "Planned: ${CurrencyFormatter.formatMoney(member.planned, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
+                                            if (ws.contributionMode == "INDIVIDUAL") {
+                                                Text(text = "Consumed: ${CurrencyFormatter.formatMoney(member.total, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
+                                                Text(text = "Planned: ${CurrencyFormatter.formatMoney(member.planned, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
+                                            } else {
+                                                Text(text = "Contributed: ${CurrencyFormatter.formatMoney(member.total, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
+                                                Text(text = "Planned: ${CurrencyFormatter.formatMoney(member.planned, ws.baseCurrency)}", style = MaterialTheme.typography.bodySmall)
+                                            }
                                         }
                                         if (member.remaining.compareTo(BigDecimal.ZERO) > 0) {
+                                            val label = if (ws.contributionMode == "INDIVIDUAL") "Remaining Budget: " else "Remaining: "
                                             Text(
-                                                text = "Remaining: ${CurrencyFormatter.formatMoney(member.remaining, ws.baseCurrency)}",
+                                                text = "$label${CurrencyFormatter.formatMoney(member.remaining, ws.baseCurrency)}",
                                                 style = MaterialTheme.typography.bodySmall,
                                                 color = MaterialTheme.colorScheme.error,
                                                 modifier = Modifier.padding(top = TripSpacing.XS)

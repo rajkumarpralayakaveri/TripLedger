@@ -21,6 +21,7 @@ fun CreateWorkspaceScreen(
     var baseCurrency by remember { mutableStateOf("INR") }
     var budget by remember { mutableStateOf("") }
     var plannedMemberCount by remember { mutableStateOf("5") }
+    var contributionMode by remember { mutableStateOf("COMBINED") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val isCreating by viewModel.isCreatingWorkspace.collectAsState()
@@ -86,6 +87,35 @@ fun CreateWorkspaceScreen(
             enabled = !isCreating
         )
 
+        Text(
+            text = "Contribution Mode",
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(top = TripSpacing.S)
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
+        ) {
+            val modes = listOf("COMBINED" to "Combined Pool", "INDIVIDUAL" to "Individual Spending")
+            modes.forEach { (modeKey, modeLabel) ->
+                val isSelected = contributionMode == modeKey
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { contributionMode = modeKey },
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else androidx.compose.ui.graphics.Color.Transparent
+                    ),
+                    enabled = !isCreating,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = modeLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+
         TripTextField(
             value = plannedMemberCount,
             onValueChange = { plannedMemberCount = it },
@@ -127,6 +157,7 @@ fun CreateWorkspaceScreen(
                         baseCurrency = baseCurrency,
                         budget = budgetDecimal,
                         plannedMemberCount = members,
+                        contributionMode = contributionMode,
                         onSuccess = onNavigateBack,
                         onError = { errorMessage = it }
                     )

@@ -49,6 +49,7 @@ public class WorkspaceController {
                 request.plannedMemberCount(),
                 user.getId(),
                 request.contributionStrategy(),
+                request.contributionMode(),
                 request.customAmounts(),
                 request.percentages()
         );
@@ -84,6 +85,7 @@ public class WorkspaceController {
                 request.budget(),
                 request.plannedMemberCount(),
                 request.status(),
+                request.contributionMode(),
                 user.getId()
         );
         return ResponseEntity.ok(ApiResponse.success(workspace));

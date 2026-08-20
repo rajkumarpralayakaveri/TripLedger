@@ -24,5 +24,7 @@ public record WorkspaceUpdateRequest(
     @Min(value = 1, message = "Planned member count must be at least 1")
     Integer plannedMemberCount,
 
-    WorkspaceStatus status
+    WorkspaceStatus status,
+
+    com.rkdevstudios.tripledger.workspace.domain.ContributionMode contributionMode
 ) {}

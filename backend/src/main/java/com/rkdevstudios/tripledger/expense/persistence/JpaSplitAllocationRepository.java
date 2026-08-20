@@ -10,5 +10,6 @@ import java.util.List;
 @Repository
 public interface JpaSplitAllocationRepository extends JpaRepository<SplitAllocation, String>, SplitAllocationRepository {
     List<SplitAllocation> findByExpenseId(String expenseId);
+    List<SplitAllocation> findByUserId(String userId);
     void deleteByExpenseId(String expenseId);
 }

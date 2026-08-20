@@ -41,6 +41,10 @@ public class Workspace {
     @Column(name = "contribution_strategy", nullable = false, length = 20)
     private ContributionStrategy contributionStrategy = ContributionStrategy.EQUAL;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "contribution_mode", nullable = false, length = 20)
+    private ContributionMode contributionMode = ContributionMode.COMBINED;
+
     @Column(name = "planned_member_count")
     private Integer plannedMemberCount = 1;
 
@@ -172,6 +176,14 @@ public class Workspace {
 
     public void setContributionStrategy(ContributionStrategy contributionStrategy) {
         this.contributionStrategy = contributionStrategy;
+    }
+
+    public ContributionMode getContributionMode() {
+        return contributionMode;
+    }
+
+    public void setContributionMode(ContributionMode contributionMode) {
+        this.contributionMode = contributionMode;
     }
 
     public Integer getPlannedMemberCount() {

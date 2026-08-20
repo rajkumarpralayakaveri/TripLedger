@@ -61,6 +61,19 @@ interface WorkspaceApiService {
         @Path("paymentId") paymentId: String,
         @retrofit2.http.Body request: PaymentRejectionRequest
     ): NetworkResponse<PaymentProofResponseDto>
+
+    @retrofit2.http.DELETE("api/v1/workspaces/{id}/members/{userId}")
+    suspend fun removeMember(
+        @Path("id") workspaceId: String,
+        @Path("userId") userId: String
+    ): NetworkResponse<Unit>
+
+    @retrofit2.http.PUT("api/v1/workspaces/{id}/contributions/planned/{userId}")
+    suspend fun updateMemberPlannedContribution(
+        @Path("id") workspaceId: String,
+        @Path("userId") userId: String,
+        @retrofit2.http.Body request: UpdatePlannedContributionRequestDto
+    ): NetworkResponse<Unit>
 }
 
 data class WorkspaceCreateRequestDto(
@@ -71,7 +84,12 @@ data class WorkspaceCreateRequestDto(
     val baseCurrency: String,
     val budget: BigDecimal?,
     val plannedMemberCount: Int,
-    val contributionStrategy: String = "EQUAL"
+    val contributionStrategy: String = "EQUAL",
+    val contributionMode: String = "COMBINED"
+)
+
+data class UpdatePlannedContributionRequestDto(
+    val plannedAmount: BigDecimal
 )
 
 data class JoinRequestDto(
@@ -107,7 +125,8 @@ data class WorkspaceDto(
     val plannedMemberCount: Int,
     val memberCount: Int,
     val status: String,
-    val contributionStrategy: String
+    val contributionStrategy: String,
+    val contributionMode: String = "COMBINED"
 )
 
 data class WorkspaceFinancialSnapshotDto(

@@ -142,6 +142,22 @@ public class ContributionController {
         return ResponseEntity.ok(ApiResponse.success(snapshot));
     }
 
+    @PutMapping("/contributions/planned/{userId}")
+    public ResponseEntity<ApiResponse<com.rkdevstudios.tripledger.contribution.domain.PlannedContribution>> updateMemberPlannedContribution(
+            @PathVariable("id") String id,
+            @PathVariable("userId") String targetUserId,
+            @Valid @RequestBody UpdatePlannedContributionRequest request
+    ) {
+        User user = getAuthenticatedUser();
+        com.rkdevstudios.tripledger.contribution.domain.PlannedContribution planned = contributionService.updateMemberPlannedContribution(
+                id,
+                targetUserId,
+                request.plannedAmount(),
+                user.getId()
+        );
+        return ResponseEntity.ok(ApiResponse.success(planned));
+    }
+
     @PutMapping("/strategy")
     public ResponseEntity<ApiResponse<Void>> updateStrategy(
             @PathVariable("id") String id,

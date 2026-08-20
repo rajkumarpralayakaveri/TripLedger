@@ -28,6 +28,8 @@ class ContributionServiceTest {
     private WorkspaceMemberRepository workspaceMemberRepository;
     private WorkspaceRepository workspaceRepository;
     private UserRepository userRepository;
+    private com.rkdevstudios.tripledger.expense.domain.SplitAllocationRepository splitAllocationRepository;
+    private com.rkdevstudios.tripledger.expense.domain.ExpenseRepository expenseRepository;
     private ContributionService contributionService;
 
     @BeforeEach
@@ -37,12 +39,16 @@ class ContributionServiceTest {
         workspaceMemberRepository = mock(WorkspaceMemberRepository.class);
         workspaceRepository = mock(WorkspaceRepository.class);
         userRepository = mock(UserRepository.class);
+        splitAllocationRepository = mock(com.rkdevstudios.tripledger.expense.domain.SplitAllocationRepository.class);
+        expenseRepository = mock(com.rkdevstudios.tripledger.expense.domain.ExpenseRepository.class);
         contributionService = new ContributionService(
                 plannedContributionRepository,
                 contributionEntryRepository,
                 workspaceMemberRepository,
                 workspaceRepository,
-                userRepository
+                userRepository,
+                splitAllocationRepository,
+                expenseRepository
         );
     }
 
@@ -298,5 +304,51 @@ class ContributionServiceTest {
 
         // Verify actual contribution entry list has not been modified/deleted
         verify(contributionEntryRepository, never()).save(any());
+    }
+
+    @Test
+    void testGetContributionSummary_IndividualMode_CalculatesRemainingFromSplit() {
+        String workspaceId = "ws_ind";
+        String userId = "usr_1";
+
+        Workspace workspace = new Workspace(workspaceId, "Trip", "Desc", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(15000), 3, "usr_1");
+        workspace.setContributionMode(com.rkdevstudios.tripledger.workspace.domain.ContributionMode.INDIVIDUAL);
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(workspace));
+
+        PlannedContribution planned = new PlannedContribution("pc_1", workspaceId, userId, BigDecimal.valueOf(5000));
+        when(plannedContributionRepository.findByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(Optional.of(planned));
+
+        // Mock split allocations consumed by user = 2000
+        com.rkdevstudios.tripledger.expense.domain.SplitAllocation split = new com.rkdevstudios.tripledger.expense.domain.SplitAllocation("s1", "exp1", userId, new com.rkdevstudios.tripledger.expense.domain.Money(BigDecimal.valueOf(2000), "INR"), BigDecimal.valueOf(2000));
+        when(splitAllocationRepository.findByUserId(userId)).thenReturn(List.of(split));
+
+        com.rkdevstudios.tripledger.expense.domain.Expense mockExpense = new com.rkdevstudios.tripledger.expense.domain.Expense("exp1", workspaceId, userId, new com.rkdevstudios.tripledger.expense.domain.Money(BigDecimal.valueOf(2000), "INR"), "Hotel", "cat1", LocalDate.now());
+        when(expenseRepository.findById("exp1")).thenReturn(Optional.of(mockExpense));
+
+        ContributionSummary summary = contributionService.getContributionSummary(workspaceId, userId);
+
+        assertEquals(0, BigDecimal.valueOf(5000).compareTo(summary.plannedContribution()));
+        assertEquals(0, BigDecimal.valueOf(2000).compareTo(summary.totalContribution()));
+        assertEquals(0, BigDecimal.valueOf(3000).compareTo(summary.remainingContribution()));
+    }
+
+    @Test
+    void testUpdateMemberPlannedContribution_FailsWhenNewAmountLessThanContributed() {
+        String workspaceId = "ws_1";
+        String targetUser = "usr_target";
+        String callerUser = "usr_owner";
+
+        // Mock caller is OWNER
+        WorkspaceMember ownerMember = new WorkspaceMember(workspaceId, callerUser, MemberRole.OWNER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerUser)).thenReturn(Optional.of(ownerMember));
+
+        // Mock user has already contributed 4000 cash
+        ContributionEntry entry = new ContributionEntry("e1", workspaceId, targetUser, ContributionEntryType.CASH, BigDecimal.valueOf(4000), "Cash", null);
+        when(contributionEntryRepository.findByWorkspaceIdAndUserId(workspaceId, targetUser)).thenReturn(List.of(entry));
+
+        // Attempting to reduce planned contribution to 2000 should fail
+        assertThrows(IllegalArgumentException.class, () -> {
+            contributionService.updateMemberPlannedContribution(workspaceId, targetUser, BigDecimal.valueOf(2000), callerUser);
+        });
     }
 }

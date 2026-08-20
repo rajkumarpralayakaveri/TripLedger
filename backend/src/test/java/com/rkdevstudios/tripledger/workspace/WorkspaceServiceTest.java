@@ -25,6 +25,8 @@ class WorkspaceServiceTest {
     private WorkspaceMemberRepository workspaceMemberRepository;
     private InviteTokenRepository inviteTokenRepository;
     private ContributionService contributionService;
+    private com.rkdevstudios.tripledger.contribution.domain.ContributionEntryRepository contributionEntryRepository;
+    private com.rkdevstudios.tripledger.expense.domain.ExpenseRepository expenseRepository;
     private WorkspaceService workspaceService;
 
     @BeforeEach
@@ -33,11 +35,15 @@ class WorkspaceServiceTest {
         workspaceMemberRepository = mock(WorkspaceMemberRepository.class);
         inviteTokenRepository = mock(InviteTokenRepository.class);
         contributionService = mock(ContributionService.class);
+        contributionEntryRepository = mock(com.rkdevstudios.tripledger.contribution.domain.ContributionEntryRepository.class);
+        expenseRepository = mock(com.rkdevstudios.tripledger.expense.domain.ExpenseRepository.class);
         workspaceService = new WorkspaceService(
                 workspaceRepository,
                 workspaceMemberRepository,
                 inviteTokenRepository,
-                contributionService
+                contributionService,
+                contributionEntryRepository,
+                expenseRepository
         );
     }
 
@@ -140,7 +146,46 @@ class WorkspaceServiceTest {
         when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(member));
 
         assertThrows(SecurityException.class, () -> {
-            workspaceService.archiveWorkspace(wsId, callerId);
+            workspaceService.updateWorkspace(wsId, null, null, null, null, null, null, WorkspaceStatus.ARCHIVED, null, callerId);
+        });
+    }
+
+    @Test
+    void testUpdateWorkspace_ContributionModeLockedAfterFinancialActivity() {
+        String wsId = "ws_111";
+        String callerId = "usr_123";
+
+        Workspace workspace = new Workspace(wsId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.TEN, 5, callerId);
+        workspace.setContributionMode(ContributionMode.COMBINED);
+
+        when(workspaceRepository.findById(wsId)).thenReturn(Optional.of(workspace));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(new WorkspaceMember(wsId, callerId, MemberRole.OWNER)));
+
+        // Mock existing financial activity
+        when(contributionEntryRepository.findByWorkspaceId(wsId)).thenReturn(Collections.singletonList(new com.rkdevstudios.tripledger.contribution.domain.ContributionEntry()));
+
+        assertThrows(IllegalStateException.class, () -> {
+            workspaceService.updateWorkspace(wsId, null, null, null, null, null, null, null, ContributionMode.INDIVIDUAL, callerId);
+        });
+    }
+
+    @Test
+    void testRemoveMember_BlockedWhenFinancialActivityExists() {
+        String wsId = "ws_111";
+        String callerId = "usr_owner";
+        String targetId = "usr_member";
+
+        WorkspaceMember caller = new WorkspaceMember(wsId, callerId, MemberRole.OWNER);
+        WorkspaceMember target = new WorkspaceMember(wsId, targetId, MemberRole.MEMBER);
+
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Optional.of(target));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(wsId, callerId)).thenReturn(Optional.of(caller));
+
+        // Mock financial entry exists for target member
+        when(contributionEntryRepository.findByWorkspaceIdAndUserId(wsId, targetId)).thenReturn(Collections.singletonList(new com.rkdevstudios.tripledger.contribution.domain.ContributionEntry()));
+
+        assertThrows(IllegalStateException.class, () -> {
+            workspaceService.removeMember(wsId, targetId, callerId);
         });
     }
 }

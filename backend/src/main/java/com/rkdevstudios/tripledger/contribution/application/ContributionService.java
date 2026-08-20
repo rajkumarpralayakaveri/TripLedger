@@ -24,19 +24,25 @@ public class ContributionService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final WorkspaceRepository workspaceRepository;
     private final UserRepository userRepository;
+    private final com.rkdevstudios.tripledger.expense.domain.SplitAllocationRepository splitAllocationRepository;
+    private final com.rkdevstudios.tripledger.expense.domain.ExpenseRepository expenseRepository;
 
     public ContributionService(
             PlannedContributionRepository plannedContributionRepository,
             ContributionEntryRepository contributionEntryRepository,
             WorkspaceMemberRepository workspaceMemberRepository,
             WorkspaceRepository workspaceRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            com.rkdevstudios.tripledger.expense.domain.SplitAllocationRepository splitAllocationRepository,
+            com.rkdevstudios.tripledger.expense.domain.ExpenseRepository expenseRepository
     ) {
         this.plannedContributionRepository = plannedContributionRepository;
         this.contributionEntryRepository = contributionEntryRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.workspaceRepository = workspaceRepository;
         this.userRepository = userRepository;
+        this.splitAllocationRepository = splitAllocationRepository;
+        this.expenseRepository = expenseRepository;
     }
 
     @Transactional
@@ -130,6 +136,29 @@ public class ContributionService {
     }
 
     @Transactional
+    public PlannedContribution updateMemberPlannedContribution(
+            String workspaceId,
+            String targetUserId,
+            BigDecimal newPlannedAmount,
+            String callerUserId
+    ) {
+        verifyAuthorized(workspaceId, callerUserId);
+
+        ContributionSummary summary = getContributionSummary(workspaceId, targetUserId);
+        BigDecimal alreadyContributed = summary.cashContributed().add(summary.directExpenseContribution());
+
+        if (newPlannedAmount.compareTo(alreadyContributed) < 0) {
+            throw new IllegalArgumentException("New planned contribution (₹" + newPlannedAmount + ") cannot be less than amount already contributed/paid (₹" + alreadyContributed + ")");
+        }
+
+        PlannedContribution planned = plannedContributionRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
+                .orElseGet(() -> new PlannedContribution(UUID.randomUUID().toString(), workspaceId, targetUserId, BigDecimal.ZERO));
+
+        planned.setPlannedAmount(newPlannedAmount);
+        return plannedContributionRepository.save(planned);
+    }
+
+    @Transactional
     public ContributionEntry recordCashContribution(
             String workspaceId,
             String userId,
@@ -197,6 +226,12 @@ public class ContributionService {
     }
 
     public ContributionSummary getContributionSummary(String workspaceId, String userId) {
+        Workspace workspace = workspaceRepository.findById(workspaceId)
+                .orElse(null);
+        com.rkdevstudios.tripledger.workspace.domain.ContributionMode mode = (workspace != null && workspace.getContributionMode() != null)
+                ? workspace.getContributionMode()
+                : com.rkdevstudios.tripledger.workspace.domain.ContributionMode.COMBINED;
+
         PlannedContribution planned = plannedContributionRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElse(new PlannedContribution("", workspaceId, userId, BigDecimal.ZERO));
 
@@ -211,6 +246,18 @@ public class ContributionService {
                 case CASH -> cash = cash.add(entry.getAmount());
                 case DIRECT_EXPENSE -> directExpense = directExpense.add(entry.getAmount());
                 case ADJUSTMENT -> adjustments = adjustments.add(entry.getAmount());
+            }
+        }
+
+        BigDecimal consumedSplit = BigDecimal.ZERO;
+        if (mode == com.rkdevstudios.tripledger.workspace.domain.ContributionMode.INDIVIDUAL) {
+            List<com.rkdevstudios.tripledger.expense.domain.SplitAllocation> splits = splitAllocationRepository.findByUserId(userId);
+            for (com.rkdevstudios.tripledger.expense.domain.SplitAllocation sa : splits) {
+                var expOpt = expenseRepository.findById(sa.getExpenseId());
+                if (expOpt.isPresent() && expOpt.get().getWorkspaceId().equals(workspaceId)
+                        && expOpt.get().getStatus() != com.rkdevstudios.tripledger.expense.domain.ExpenseStatus.DELETED) {
+                    consumedSplit = consumedSplit.add(sa.getMoney().getAmount());
+                }
             }
         }
 
@@ -231,7 +278,9 @@ public class ContributionService {
                 planned.getPlannedAmount(),
                 cash,
                 directExpense,
-                adjustments
+                adjustments,
+                mode,
+                consumedSplit
         );
     }
 
