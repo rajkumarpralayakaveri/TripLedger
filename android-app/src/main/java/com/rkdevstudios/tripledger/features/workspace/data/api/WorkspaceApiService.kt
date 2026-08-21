@@ -281,7 +281,17 @@ data class ExpenseDto(
     val expenseDate: String,
     val expenseAt: String?,
     val receiptUrl: String?,
-    val note: String?
+    val note: String?,
+    val splitType: String = "EQUAL",
+    val splitValues: Map<String, BigDecimal>? = null
+)
+
+data class SplitAllocationDto(
+    val userId: String,
+    val name: String,
+    val amount: BigDecimal,
+    val currency: String,
+    val rawValue: BigDecimal
 )
 
 data class ExpenseTimelineItemDto(
@@ -298,7 +308,9 @@ data class ExpenseTimelineItemDto(
     val expenseDate: String,
     val expenseAt: String?,
     val receiptUrl: String?,
-    val note: String?
+    val note: String?,
+    val splitType: String = "EQUAL",
+    val splitAllocations: List<SplitAllocationDto> = emptyList()
 )
 
 data class ExpenseTimelineGroupDto(

@@ -47,6 +47,10 @@ public class Expense {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "split_type", nullable = false, length = 20)
+    private SplitType splitType = SplitType.EQUAL;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -58,11 +62,11 @@ public class Expense {
 
     public Expense(String id, String workspaceId, String paidByUserId, Money money, String description,
                    String categoryId, LocalDate expenseDate) {
-        this(id, workspaceId, paidByUserId, money, description, categoryId, expenseDate, Instant.now(), null, null);
+        this(id, workspaceId, paidByUserId, money, description, categoryId, expenseDate, Instant.now(), null, null, SplitType.EQUAL);
     }
 
     public Expense(String id, String workspaceId, String paidByUserId, Money money, String description,
-                   String categoryId, LocalDate expenseDate, Instant expenseAt, String receiptUrl, String note) {
+                   String categoryId, LocalDate expenseDate, Instant expenseAt, String receiptUrl, String note, SplitType splitType) {
         this.id = id;
         this.workspaceId = workspaceId;
         this.paidByUserId = paidByUserId;
@@ -73,6 +77,7 @@ public class Expense {
         this.expenseAt = expenseAt != null ? expenseAt : Instant.now();
         this.receiptUrl = receiptUrl;
         this.note = note;
+        this.splitType = splitType != null ? splitType : SplitType.EQUAL;
     }
 
     @PreUpdate
@@ -121,4 +126,7 @@ public class Expense {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public SplitType getSplitType() { return splitType; }
+    public void setSplitType(SplitType splitType) { this.splitType = splitType; }
 }

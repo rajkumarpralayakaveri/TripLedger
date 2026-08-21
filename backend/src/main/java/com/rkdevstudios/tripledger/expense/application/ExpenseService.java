@@ -144,7 +144,8 @@ public class ExpenseService {
                 expenseDate,
                 expenseAt,
                 receiptUrl,
-                note
+                note,
+                splitType
         );
         expense.setStatus(ExpenseStatus.UNSETTLED);
         expense.setExpenseType(ExpenseType.NORMAL);
@@ -237,11 +238,11 @@ public class ExpenseService {
                 splitValues
         );
 
-        // Update fields
         expense.setMoney(new Money(amount, currency));
         expense.setDescription(description);
         expense.setCategoryId(categoryId);
         expense.setExpenseDate(expenseDate);
+        expense.setSplitType(splitType);
         Expense updatedExpense = expenseRepository.save(expense);
 
         // Reset and save new allocations

@@ -236,7 +236,17 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                                 date = try { LocalDate.parse(itemDto.expenseDate) } catch (e: Exception) { LocalDate.now() },
                                 expenseAt = itemDto.expenseAt,
                                 receiptUrl = itemDto.receiptUrl,
-                                note = itemDto.note
+                                note = itemDto.note,
+                                splitType = itemDto.splitType,
+                                splitAllocations = itemDto.splitAllocations.map {
+                                    com.rkdevstudios.tripledger.features.expense.domain.SplitAllocationItem(
+                                        userId = it.userId,
+                                        name = it.name,
+                                        amount = it.amount,
+                                        currency = it.currency,
+                                        rawValue = it.rawValue
+                                    )
+                                }
                             )
                         }
                     )
@@ -261,7 +271,9 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
         participantIds: List<String>,
         expenseAt: String? = null,
         receiptUrl: String? = null,
-        note: String? = null
+        note: String? = null,
+        splitType: String = "EQUAL",
+        splitValues: Map<String, BigDecimal>? = null
     ): Result<Unit> {
         return try {
             val request = com.rkdevstudios.tripledger.features.workspace.data.api.CreateExpenseRequestDto(
@@ -271,8 +283,9 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                 description = description,
                 categoryId = categoryId,
                 expenseDate = expenseDate.toString(),
-                splitType = "EQUAL",
+                splitType = splitType,
                 participantIds = participantIds,
+                splitValues = splitValues,
                 expenseAt = expenseAt,
                 receiptUrl = receiptUrl,
                 note = note

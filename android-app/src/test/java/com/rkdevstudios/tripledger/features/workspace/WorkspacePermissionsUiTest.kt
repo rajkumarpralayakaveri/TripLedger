@@ -86,12 +86,12 @@ class WorkspacePermissionsUiTest {
         override suspend fun getExpenseTimeline(workspaceId: String): NetworkResponse<ExpenseTimelineResponseDto> =
             NetworkResponse(true, ExpenseTimelineResponseDto(listOf(
                 ExpenseTimelineGroupDto("2026-08-20", listOf(
-                    ExpenseTimelineItemDto("e_1", "Hotel", BigDecimal.valueOf(10000), "INR", "usr_raj", "Raj", "cat_hotel", "Hotel", "hotel", "#000000", "2026-08-20", "2026-08-20T10:00:00Z", "https://cloudinary.com/receipt.jpg", "Paid via UPI")
+                    ExpenseTimelineItemDto("e_1", "Hotel", BigDecimal.valueOf(10000), "INR", "usr_raj", "Raj", "cat_hotel", "Hotel", "hotel", "#000000", "2026-08-20", "2026-08-20T10:00:00Z", "https://cloudinary.com/receipt.jpg", "Paid via UPI", "EQUAL", emptyList())
                 ))
             )), null)
 
         override suspend fun createExpense(workspaceId: String, request: CreateExpenseRequestDto): NetworkResponse<ExpenseDto> =
-            NetworkResponse(true, ExpenseDto("e_1", workspaceId, request.paidByUserId, request.description, request.categoryId, request.expenseDate, request.expenseAt, request.receiptUrl, request.note), null)
+            NetworkResponse(true, ExpenseDto("e_1", workspaceId, request.paidByUserId, request.description, request.categoryId, request.expenseDate, request.expenseAt, request.receiptUrl, request.note, request.splitType, request.splitValues), null)
 
         override suspend fun updateWorkspace(workspaceId: String, request: WorkspaceUpdateRequestDto): NetworkResponse<WorkspaceDto> {
             if (request.status == "ARCHIVED") {

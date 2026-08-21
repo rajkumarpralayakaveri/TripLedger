@@ -141,7 +141,7 @@ class ExpenseServiceTest {
         String workspaceId = "ws_1";
         String payerId = "usr_1";
 
-        Expense expense = new Expense(expenseId, workspaceId, payerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now());
+        Expense expense = new Expense(expenseId, workspaceId, payerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL);
         expense.setStatus(ExpenseStatus.UNSETTLED);
         when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
 

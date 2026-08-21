@@ -379,6 +379,8 @@ class WorkspaceViewModel(
         expenseAt: String? = null,
         receiptUrl: String? = null,
         note: String? = null,
+        splitType: String = "EQUAL",
+        splitValues: Map<String, BigDecimal>? = null,
         onSuccess: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
@@ -396,7 +398,9 @@ class WorkspaceViewModel(
                 participantIds = participantIds,
                 expenseAt = expenseAt,
                 receiptUrl = receiptUrl,
-                note = note
+                note = note,
+                splitType = splitType,
+                splitValues = splitValues
             ).fold(
                 onSuccess = {
                     refreshExpenseTimeline(workspaceId)

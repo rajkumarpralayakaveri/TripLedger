@@ -25,6 +25,7 @@ public class ExpenseController {
     private final UserRepository userRepository;
     private final ExpenseCategoryRepository categoryRepository;
     private final ActivityEntryRepository activityEntryRepository;
+    private final SplitAllocationRepository splitAllocationRepository;
     private final ObjectMapper objectMapper = new ObjectMapper()
             .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
 
@@ -32,12 +33,14 @@ public class ExpenseController {
             ExpenseService expenseService,
             UserRepository userRepository,
             ExpenseCategoryRepository categoryRepository,
-            ActivityEntryRepository activityEntryRepository
+            ActivityEntryRepository activityEntryRepository,
+            SplitAllocationRepository splitAllocationRepository
     ) {
         this.expenseService = expenseService;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.activityEntryRepository = activityEntryRepository;
+        this.splitAllocationRepository = splitAllocationRepository;
     }
 
     private User getAuthenticatedUser() {
@@ -95,6 +98,16 @@ public class ExpenseController {
             String catIcon = cat != null ? cat.getIcon() : "more_horiz";
             String catColor = cat != null ? cat.getColor() : "#607D8B";
 
+            List<SplitAllocationDto> allocations = splitAllocationRepository.findByExpenseId(e.getId())
+                    .stream()
+                    .map(sa -> new SplitAllocationDto(
+                            sa.getUserId(),
+                            getUserName(sa.getUserId()),
+                            sa.getMoney().getAmount(),
+                            sa.getMoney().getCurrency(),
+                            sa.getValue()
+                    )).toList();
+
             return new ExpenseTimelineItem(
                     e.getId(),
                     e.getDescription(),
@@ -109,7 +122,9 @@ public class ExpenseController {
                     e.getExpenseDate(),
                     e.getExpenseAt(),
                     e.getReceiptUrl(),
-                    e.getNote()
+                    e.getNote(),
+                    e.getSplitType().name(),
+                    allocations
             );
         }).toList();
 
@@ -129,7 +144,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/expenses/{expenseId}")
-    public ResponseEntity<ApiResponse<Expense>> getExpenseDetails(
+    public ResponseEntity<ApiResponse<ExpenseDetailResponse>> getExpenseDetails(
             @PathVariable("id") String id,
             @PathVariable("expenseId") String expenseId
     ) {
@@ -139,7 +154,18 @@ public class ExpenseController {
                 .filter(e -> e.getId().equals(expenseId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Expense not found or unauthorized"));
-        return ResponseEntity.ok(ApiResponse.success(expense));
+
+        List<SplitAllocationDto> allocations = splitAllocationRepository.findByExpenseId(expense.getId())
+                .stream()
+                .map(sa -> new SplitAllocationDto(
+                        sa.getUserId(),
+                        getUserName(sa.getUserId()),
+                        sa.getMoney().getAmount(),
+                        sa.getMoney().getCurrency(),
+                        sa.getValue()
+                )).toList();
+
+        return ResponseEntity.ok(ApiResponse.success(new ExpenseDetailResponse(expense, allocations)));
     }
 
     @PutMapping("/expenses/{expenseId}")

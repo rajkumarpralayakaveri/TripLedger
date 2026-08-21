@@ -34,7 +34,9 @@ class ExpenseSerializationTest {
                 LocalDate.parse("2026-08-20"),
                 now,
                 receiptUrl,
-                "Sunset snacks"
+                "Sunset snacks",
+                "EQUAL",
+                java.util.Collections.emptyList()
         );
 
         String json = objectMapper.writeValueAsString(item);

@@ -137,43 +137,77 @@ fun ExpenseDetailScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(TripSpacing.S)
                 ) {
-                    Text(
-                        text = "Split Participants",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Split Participants",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Text(
+                            text = "Type: ${expenseItem.splitType}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
 
-                    val participantCount = if (members.isNotEmpty()) members.size else 1
-                    val perPersonAmount = expenseItem.amount.divide(
-                        BigDecimal.valueOf(participantCount.toLong()),
-                        2,
-                        RoundingMode.HALF_UP
-                    )
-
-                    if (members.isNotEmpty()) {
-                        members.forEach { member ->
+                    if (expenseItem.splitAllocations.isNotEmpty()) {
+                        expenseItem.splitAllocations.forEach { alloc ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(text = member.name, style = MaterialTheme.typography.bodyMedium)
                                 Text(
-                                    text = CurrencyFormatter.formatMoney(perPersonAmount, expenseItem.currency),
+                                    text = if (expenseItem.splitType != "EQUAL" && expenseItem.splitType != "EXACT") {
+                                        "${alloc.name} (${alloc.rawValue})"
+                                    } else {
+                                        alloc.name
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = CurrencyFormatter.formatMoney(alloc.amount, alloc.currency),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.secondary
                                 )
                             }
                         }
                     } else {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(text = expenseItem.paidByName, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = CurrencyFormatter.formatMoney(expenseItem.amount, expenseItem.currency),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
+                        // Fallback to simple members division if allocations list is empty
+                        val participantCount = if (members.isNotEmpty()) members.size else 1
+                        val perPersonAmount = expenseItem.amount.divide(
+                            BigDecimal.valueOf(participantCount.toLong()),
+                            2,
+                            RoundingMode.HALF_UP
+                        )
+                        if (members.isNotEmpty()) {
+                            members.forEach { member ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = member.name, style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        text = CurrencyFormatter.formatMoney(perPersonAmount, expenseItem.currency),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = expenseItem.paidByName, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    text = CurrencyFormatter.formatMoney(expenseItem.amount, expenseItem.currency),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
                         }
                     }
                 }

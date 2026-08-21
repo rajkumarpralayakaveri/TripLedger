@@ -105,7 +105,7 @@ class WorkspaceViewModelInitTest {
             workspaceId: String,
             request: com.rkdevstudios.tripledger.features.workspace.data.api.CreateExpenseRequestDto
         ): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto> {
-            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto("e_1", workspaceId, request.paidByUserId, request.description, request.categoryId, request.expenseDate, request.expenseAt, request.receiptUrl, request.note), null)
+            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto("e_1", workspaceId, request.paidByUserId, request.description, request.categoryId, request.expenseDate, request.expenseAt, request.receiptUrl, request.note, request.splitType, request.splitValues), null)
         }
     }
 

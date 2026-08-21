@@ -17,7 +17,17 @@ data class ExpenseItem(
     val categoryIcon: String,
     val expenseAt: String? = null,
     val receiptUrl: String? = null,
-    val note: String? = null
+    val note: String? = null,
+    val splitType: String = "EQUAL",
+    val splitAllocations: List<SplitAllocationItem> = emptyList()
+)
+
+data class SplitAllocationItem(
+    val userId: String,
+    val name: String,
+    val amount: java.math.BigDecimal,
+    val currency: String,
+    val rawValue: java.math.BigDecimal
 )
 
 data class ExpenseTimelineGroup(
