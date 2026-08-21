@@ -48,7 +48,7 @@ public class Expense {
     private String note;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "split_type", nullable = false, length = 20)
+    @Column(name = "split_type", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'EQUAL'")
     private SplitType splitType = SplitType.EQUAL;
 
     @Column(name = "created_at", nullable = false, updatable = false)
