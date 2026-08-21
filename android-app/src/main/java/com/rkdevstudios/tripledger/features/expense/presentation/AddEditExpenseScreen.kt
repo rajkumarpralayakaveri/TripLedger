@@ -23,10 +23,18 @@ import java.math.BigDecimal
 fun AddEditExpenseScreen(
     workspaceId: String,
     viewModel: WorkspaceViewModel,
+    expenseId: String? = null,
     onNavigateBack: () -> Unit
 ) {
     val snapshot by viewModel.currentFinancialSnapshot.collectAsState()
     val members = snapshot?.contributions ?: emptyList()
+
+    val timeline by viewModel.currentTimeline.collectAsState()
+    val existingExpense = remember(timeline, expenseId) {
+        if (expenseId != null) {
+            timeline.flatMap { it.expenses }.find { it.id == expenseId }
+        } else null
+    }
 
     val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
     val currentSessionUserId = viewModel.sessionManager?.let {
@@ -36,14 +44,14 @@ fun AddEditExpenseScreen(
     } ?: ""
     val currentUserMember = members.find { it.userId == currentSessionUserId } ?: members.firstOrNull()
 
-    var description by remember { mutableStateOf("") }
-    var amount by remember { mutableStateOf("") }
-    var categoryId by remember { mutableStateOf("cat_general") }
-    var note by remember { mutableStateOf("") }
-    var receiptUrl by remember { mutableStateOf<String?>(null) }
+    var description by remember { mutableStateOf(existingExpense?.description ?: "") }
+    var amount by remember { mutableStateOf(existingExpense?.amount?.toString() ?: "") }
+    var categoryId by remember { mutableStateOf(existingExpense?.categoryId?.ifBlank { "cat_general" } ?: "cat_general") }
+    var note by remember { mutableStateOf(existingExpense?.note ?: "") }
+    var receiptUrl by remember { mutableStateOf<String?>(existingExpense?.receiptUrl) }
 
-    var selectedPayerUserId by remember(members) {
-        mutableStateOf(currentUserMember?.userId ?: "")
+    var selectedPayerUserId by remember(members, existingExpense) {
+        mutableStateOf(existingExpense?.paidByUserId ?: currentUserMember?.userId ?: "")
     }
 
     val isSaving by viewModel.isSavingExpense.collectAsState()
@@ -53,17 +61,25 @@ fun AddEditExpenseScreen(
 
     // Phase 4 Split Selection State variables
     val splitTypes = listOf("EQUAL", "EXACT", "PERCENTAGE", "SHARES")
-    var selectedSplitType by remember { mutableStateOf("EQUAL") }
+    var selectedSplitType by remember { mutableStateOf(existingExpense?.splitType ?: "EQUAL") }
     var isSplitTypeMenuExpanded by remember { mutableStateOf(false) }
 
     // Participant IDs selection (defaults to all)
-    var selectedParticipantIds by remember(members) {
-        mutableStateOf(members.map { it.userId }.toSet())
+    var selectedParticipantIds by remember(members, existingExpense) {
+        mutableStateOf(
+            existingExpense?.splitAllocations?.map { it.userId }?.toSet()
+                ?: members.map { it.userId }.toSet()
+        )
     }
 
     // Split raw coefficient values mapping userId to raw String representation
-    var splitInputs by remember(members) {
-        mutableStateOf(members.associate { it.userId to "" })
+    var splitInputs by remember(members, existingExpense) {
+        mutableStateOf(
+            members.associate { member ->
+                val alloc = existingExpense?.splitAllocations?.find { it.userId == member.userId }
+                member.userId to (alloc?.rawValue?.toString() ?: "")
+            }
+        )
     }
 
     // UI Validations
@@ -394,22 +410,39 @@ fun AddEditExpenseScreen(
                     val valuesMap = selectedParticipantIds.associateWith {
                         splitInputs[it]?.toBigDecimalOrNull() ?: BigDecimal.ZERO
                     }
-                    viewModel.createExpense(
-                        workspaceId = workspaceId,
-                        paidByUserId = selectedPayerUserId,
-                        amount = amountVal,
-                        currency = "INR",
-                        description = description,
-                        categoryId = categoryId,
-                        expenseDate = java.time.LocalDate.now(),
-                        participantIds = selectedParticipantIds.toList(),
-                        splitType = selectedSplitType,
-                        splitValues = if (selectedSplitType != "EQUAL") valuesMap else null,
-                        expenseAt = java.time.Instant.now().toString(),
-                        receiptUrl = receiptUrl,
-                        note = note.ifBlank { null },
-                        onSuccess = { onNavigateBack() }
-                    )
+                    if (expenseId != null) {
+                        viewModel.updateExpense(
+                            workspaceId = workspaceId,
+                            expenseId = expenseId,
+                            amount = amountVal,
+                            currency = "INR",
+                            description = description,
+                            categoryId = categoryId,
+                            expenseDate = java.time.LocalDate.now(),
+                            splitType = selectedSplitType,
+                            participantIds = selectedParticipantIds.toList(),
+                            splitValues = if (selectedSplitType != "EQUAL") valuesMap else null,
+                            reason = "Updated via Android App",
+                            onSuccess = { onNavigateBack() }
+                        )
+                    } else {
+                        viewModel.createExpense(
+                            workspaceId = workspaceId,
+                            paidByUserId = selectedPayerUserId,
+                            amount = amountVal,
+                            currency = "INR",
+                            description = description,
+                            categoryId = categoryId,
+                            expenseDate = java.time.LocalDate.now(),
+                            participantIds = selectedParticipantIds.toList(),
+                            splitType = selectedSplitType,
+                            splitValues = if (selectedSplitType != "EQUAL") valuesMap else null,
+                            expenseAt = java.time.Instant.now().toString(),
+                            receiptUrl = receiptUrl,
+                            note = note.ifBlank { null },
+                            onSuccess = { onNavigateBack() }
+                        )
+                    }
                 },
                 enabled = description.isNotBlank() && amount.isNotBlank() && selectedPayerUserId.isNotBlank() && errorText == null && !isSaving,
                 modifier = Modifier.weight(1f)

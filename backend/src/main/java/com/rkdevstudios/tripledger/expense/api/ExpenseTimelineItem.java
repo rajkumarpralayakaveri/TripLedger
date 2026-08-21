@@ -20,5 +20,6 @@ public record ExpenseTimelineItem(
     String receiptUrl,
     String note,
     String splitType,
-    List<SplitAllocationDto> splitAllocations
+    List<SplitAllocationDto> splitAllocations,
+    String createdByUserId
 ) {}

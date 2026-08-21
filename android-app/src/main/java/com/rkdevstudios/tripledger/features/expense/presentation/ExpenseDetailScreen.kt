@@ -26,17 +26,31 @@ fun ExpenseDetailScreen(
     workspaceId: String,
     expenseId: String,
     viewModel: WorkspaceViewModel,
+    onEditExpense: (String, String) -> Unit,
     onNavigateBack: () -> Unit
 ) {
     val timeline by viewModel.currentTimeline.collectAsState()
     val snapshot by viewModel.currentFinancialSnapshot.collectAsState()
     val members = snapshot?.contributions ?: emptyList()
 
+    val appContext = androidx.compose.ui.platform.LocalContext.current.applicationContext
+    val currentSessionUserId = viewModel.sessionManager?.let {
+        try {
+            com.rkdevstudios.tripledger.core.auth.SharedPreferencesSessionStore(appContext).getSession()?.userId.orEmpty()
+        } catch (e: Exception) { "" }
+    } ?: ""
+    val currentUserRole = members.find { it.userId == currentSessionUserId }?.role ?: "MEMBER"
+
     val expenseItem: ExpenseItem? = remember(timeline, expenseId) {
         timeline.flatMap { it.expenses }.find { it.id == expenseId }
     }
 
     var isImageZoomed by remember { mutableStateOf(false) }
+    var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+
+    val canModify = remember(expenseItem, currentSessionUserId, currentUserRole) {
+        expenseItem != null && (expenseItem.createdByUserId == currentSessionUserId || currentUserRole == "ADMIN")
+    }
 
     Column(
         modifier = Modifier
@@ -273,7 +287,55 @@ fun ExpenseDetailScreen(
                     }
                 }
             }
+
+            if (canModify) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(TripSpacing.S)
+                ) {
+                    TripButton(
+                        text = "Edit Expense",
+                        onClick = { onEditExpense(workspaceId, expenseId) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(
+                        onClick = { showDeleteConfirmDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(text = "Delete Expense", color = MaterialTheme.colorScheme.onError)
+                    }
+                }
+            }
         }
+    }
+
+    if (showDeleteConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmDialog = false },
+            title = { Text(text = "Delete Expense") },
+            text = { Text(text = "Are you sure you want to delete this expense? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmDialog = false
+                        viewModel.deleteExpense(
+                            workspaceId = workspaceId,
+                            expenseId = expenseId,
+                            reason = "Deleted via Android App",
+                            onSuccess = { onNavigateBack() }
+                        )
+                    }
+                ) {
+                    Text(text = "Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmDialog = false }) {
+                    Text(text = "Cancel")
+                }
+            }
+        )
     }
 
     if (isImageZoomed && expenseItem?.receiptUrl != null) {

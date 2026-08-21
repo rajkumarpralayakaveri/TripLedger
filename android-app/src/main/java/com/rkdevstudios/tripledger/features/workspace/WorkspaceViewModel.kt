@@ -415,6 +415,75 @@ class WorkspaceViewModel(
         }
     }
 
+    fun updateExpense(
+        workspaceId: String,
+        expenseId: String,
+        amount: BigDecimal,
+        currency: String,
+        description: String,
+        categoryId: String,
+        expenseDate: LocalDate,
+        splitType: String,
+        participantIds: List<String>,
+        splitValues: Map<String, BigDecimal>?,
+        reason: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        if (_isSavingExpense.value) return
+        _isSavingExpense.value = true
+        viewModelScope.launch {
+            workspaceRepository.updateExpense(
+                workspaceId = workspaceId,
+                expenseId = expenseId,
+                amount = amount,
+                currency = currency,
+                description = description,
+                categoryId = categoryId,
+                expenseDate = expenseDate,
+                splitType = splitType,
+                participantIds = participantIds,
+                splitValues = splitValues,
+                reason = reason
+            ).fold(
+                onSuccess = {
+                    refreshExpenseTimeline(workspaceId)
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to update expense")
+                }
+            )
+            _isSavingExpense.value = false
+        }
+    }
+
+    fun deleteExpense(
+        workspaceId: String,
+        expenseId: String,
+        reason: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            workspaceRepository.deleteExpense(
+                workspaceId = workspaceId,
+                expenseId = expenseId,
+                reason = reason
+            ).fold(
+                onSuccess = {
+                    refreshExpenseTimeline(workspaceId)
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to delete expense")
+                }
+            )
+        }
+    }
+
     fun uploadExpenseReceipt(
         workspaceId: String,
         fileBytes: ByteArray,

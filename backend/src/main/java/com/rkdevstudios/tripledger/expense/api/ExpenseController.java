@@ -124,7 +124,8 @@ public class ExpenseController {
                     e.getReceiptUrl(),
                     e.getNote(),
                     e.getSplitType().name(),
-                    allocations
+                    allocations,
+                    e.getCreatedByUserId()
             );
         }).toList();
 

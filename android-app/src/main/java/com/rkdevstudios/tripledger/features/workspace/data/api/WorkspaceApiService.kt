@@ -103,6 +103,20 @@ interface WorkspaceApiService {
         @Path("id") workspaceId: String,
         @retrofit2.http.Body request: CreateExpenseRequestDto
     ): NetworkResponse<ExpenseDto>
+
+    @retrofit2.http.PUT("api/v1/workspaces/{id}/expenses/{expenseId}")
+    suspend fun updateExpense(
+        @Path("id") workspaceId: String,
+        @Path("expenseId") expenseId: String,
+        @retrofit2.http.Body request: UpdateExpenseRequestDto
+    ): NetworkResponse<ExpenseDto>
+
+    @retrofit2.http.HTTP(method = "DELETE", path = "api/v1/workspaces/{id}/expenses/{expenseId}", hasBody = true)
+    suspend fun deleteExpense(
+        @Path("id") workspaceId: String,
+        @Path("expenseId") expenseId: String,
+        @retrofit2.http.Body request: DeleteExpenseRequestDto
+    ): NetworkResponse<Unit>
 }
 
 data class UpdateMemberRoleRequestDto(
@@ -272,6 +286,22 @@ data class CreateExpenseRequestDto(
     val note: String? = null
 )
 
+data class UpdateExpenseRequestDto(
+    val amount: BigDecimal,
+    val currency: String,
+    val description: String,
+    val categoryId: String,
+    val expenseDate: String,
+    val splitType: String = "EQUAL",
+    val participantIds: List<String>,
+    val splitValues: Map<String, BigDecimal>? = null,
+    val reason: String
+)
+
+data class DeleteExpenseRequestDto(
+    val reason: String
+)
+
 data class ExpenseDto(
     val id: String,
     val workspaceId: String,
@@ -310,7 +340,8 @@ data class ExpenseTimelineItemDto(
     val receiptUrl: String?,
     val note: String?,
     val splitType: String = "EQUAL",
-    val splitAllocations: List<SplitAllocationDto> = emptyList()
+    val splitAllocations: List<SplitAllocationDto> = emptyList(),
+    val createdByUserId: String? = null
 )
 
 data class ExpenseTimelineGroupDto(

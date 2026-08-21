@@ -107,6 +107,22 @@ class WorkspaceViewModelInitTest {
         ): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto> {
             return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto("e_1", workspaceId, request.paidByUserId, request.description, request.categoryId, request.expenseDate, request.expenseAt, request.receiptUrl, request.note, request.splitType, request.splitValues), null)
         }
+
+        override suspend fun updateExpense(
+            workspaceId: String,
+            expenseId: String,
+            request: com.rkdevstudios.tripledger.features.workspace.data.api.UpdateExpenseRequestDto
+        ): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto> {
+            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.ExpenseDto(expenseId, workspaceId, "usr_1", request.description, request.categoryId, request.expenseDate, null, null, null, request.splitType, request.splitValues), null)
+        }
+
+        override suspend fun deleteExpense(
+            workspaceId: String,
+            expenseId: String,
+            request: com.rkdevstudios.tripledger.features.workspace.data.api.DeleteExpenseRequestDto
+        ): NetworkResponse<Unit> {
+            return NetworkResponse(true, Unit, null)
+        }
     }
 
     @Test

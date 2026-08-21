@@ -19,7 +19,8 @@ data class ExpenseItem(
     val receiptUrl: String? = null,
     val note: String? = null,
     val splitType: String = "EQUAL",
-    val splitAllocations: List<SplitAllocationItem> = emptyList()
+    val splitAllocations: List<SplitAllocationItem> = emptyList(),
+    val createdByUserId: String = ""
 )
 
 data class SplitAllocationItem(

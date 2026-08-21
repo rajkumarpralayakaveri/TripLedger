@@ -212,6 +212,7 @@ class MainActivity : ComponentActivity() {
                                 workspaceId = workspaceId,
                                 expenseId = expenseId,
                                 viewModel = workspaceViewModel,
+                                onEditExpense = { id, expId -> navController.navigate("edit-expense/$id/$expId") },
                                 onNavigateBack = { navController.navigateUp() }
                             )
                         }
@@ -223,6 +224,22 @@ class MainActivity : ComponentActivity() {
                             AddEditExpenseScreen(
                                 workspaceId = workspaceId,
                                 viewModel = workspaceViewModel,
+                                onNavigateBack = { navController.navigateUp() }
+                            )
+                        }
+                        composable(
+                            route = "edit-expense/{id}/{expenseId}",
+                            arguments = listOf(
+                                navArgument("id") { type = NavType.StringType },
+                                navArgument("expenseId") { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            val workspaceId = backStackEntry.arguments?.getString("id").orEmpty()
+                            val expenseId = backStackEntry.arguments?.getString("expenseId").orEmpty()
+                            AddEditExpenseScreen(
+                                workspaceId = workspaceId,
+                                viewModel = workspaceViewModel,
+                                expenseId = expenseId,
                                 onNavigateBack = { navController.navigateUp() }
                             )
                         }

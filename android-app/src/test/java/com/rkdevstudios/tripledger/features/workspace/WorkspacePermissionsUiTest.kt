@@ -112,6 +112,27 @@ class WorkspacePermissionsUiTest {
                 contributionMode = request.contributionMode ?: "COMBINED"
             ), null)
         }
+
+        var lastUpdatedExpenseId: String? = null
+        var lastDeletedExpenseId: String? = null
+
+        override suspend fun updateExpense(
+            workspaceId: String,
+            expenseId: String,
+            request: UpdateExpenseRequestDto
+        ): NetworkResponse<ExpenseDto> {
+            lastUpdatedExpenseId = expenseId
+            return NetworkResponse(true, ExpenseDto(expenseId, workspaceId, "usr_raj", request.description, request.categoryId, request.expenseDate, null, null, null, request.splitType, request.splitValues), null)
+        }
+
+        override suspend fun deleteExpense(
+            workspaceId: String,
+            expenseId: String,
+            request: DeleteExpenseRequestDto
+        ): NetworkResponse<Unit> {
+            lastDeletedExpenseId = expenseId
+            return NetworkResponse(true, Unit, null)
+        }
     }
 
     @Test
@@ -222,6 +243,46 @@ class WorkspacePermissionsUiTest {
             val result = repository.joinWorkspace("invalid_token")
             assertTrue(result.isFailure)
             assertEquals("Invalid or expired invitation token", result.exceptionOrNull()?.message)
+        }
+    }
+
+    @Test
+    fun updateExpense_callsUpdateExpenseApi() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.updateExpense(
+                workspaceId = "ws_1",
+                expenseId = "e_1",
+                amount = BigDecimal.valueOf(12000),
+                currency = "INR",
+                description = "Updated Hotel",
+                categoryId = "cat_hotel",
+                expenseDate = java.time.LocalDate.parse("2026-08-20"),
+                splitType = "EQUAL",
+                participantIds = listOf("usr_raj"),
+                splitValues = null,
+                reason = "Updated description"
+            )
+            assertTrue(result.isSuccess)
+            assertEquals("e_1", fakeApi.lastUpdatedExpenseId)
+        }
+    }
+
+    @Test
+    fun deleteExpense_callsDeleteExpenseApi() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.deleteExpense(
+                workspaceId = "ws_1",
+                expenseId = "e_1",
+                reason = "No longer needed"
+            )
+            assertTrue(result.isSuccess)
+            assertEquals("e_1", fakeApi.lastDeletedExpenseId)
         }
     }
 }

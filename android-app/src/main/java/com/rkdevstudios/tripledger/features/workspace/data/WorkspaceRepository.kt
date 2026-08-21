@@ -246,7 +246,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                                         currency = it.currency,
                                         rawValue = it.rawValue
                                     )
-                                }
+                                },
+                                createdByUserId = itemDto.createdByUserId ?: ""
                             )
                         }
                     )
@@ -295,6 +296,62 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                 Result.success(Unit)
             } else {
                 Result.failure(Exception(response.error?.message ?: "Failed to create expense"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateExpense(
+        workspaceId: String,
+        expenseId: String,
+        amount: BigDecimal,
+        currency: String,
+        description: String,
+        categoryId: String,
+        expenseDate: LocalDate,
+        splitType: String,
+        participantIds: List<String>,
+        splitValues: Map<String, BigDecimal>?,
+        reason: String
+    ): Result<Unit> {
+        return try {
+            val request = com.rkdevstudios.tripledger.features.workspace.data.api.UpdateExpenseRequestDto(
+                amount = amount,
+                currency = currency,
+                description = description,
+                categoryId = categoryId,
+                expenseDate = expenseDate.toString(),
+                splitType = splitType,
+                participantIds = participantIds,
+                splitValues = splitValues,
+                reason = reason
+            )
+            val response = workspaceApiService.updateExpense(workspaceId, expenseId, request)
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to update expense"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteExpense(
+        workspaceId: String,
+        expenseId: String,
+        reason: String
+    ): Result<Unit> {
+        return try {
+            val request = com.rkdevstudios.tripledger.features.workspace.data.api.DeleteExpenseRequestDto(
+                reason = reason
+            )
+            val response = workspaceApiService.deleteExpense(workspaceId, expenseId, request)
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to delete expense"))
             }
         } catch (e: Exception) {
             Result.failure(e)
