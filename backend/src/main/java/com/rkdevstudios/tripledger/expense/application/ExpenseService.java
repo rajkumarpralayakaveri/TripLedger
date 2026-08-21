@@ -63,6 +63,31 @@ public class ExpenseService {
         return ws;
     }
 
+    private void verifyCreatorOrAdmin(Expense expense, String callerUserId) {
+        WorkspaceMember member = workspaceMemberRepository.findByWorkspaceIdAndUserId(expense.getWorkspaceId(), callerUserId)
+                .orElseThrow(() -> new SecurityException("User " + callerUserId + " is not a member of workspace " + expense.getWorkspaceId()));
+
+        if (member.getRole() == com.rkdevstudios.tripledger.workspace.domain.MemberRole.ADMIN) {
+            return; // Admin can modify any expense
+        }
+
+        String creatorId = expense.getCreatedByUserId();
+        if (creatorId == null) {
+            // Backfill creatorId from database audit history
+            creatorId = expenseHistoryRepository.findByExpenseId(expense.getId()).stream()
+                    .filter(h -> "CREATE".equalsIgnoreCase(h.getAction()))
+                    .map(ExpenseHistory::getActorUserId)
+                    .findFirst()
+                    .orElse(expense.getPaidByUserId()); // Fallback to paidByUserId if no CREATE log exists
+            expense.setCreatedByUserId(creatorId);
+            expenseRepository.save(expense);
+        }
+
+        if (!creatorId.equals(callerUserId)) {
+            throw new SecurityException("User " + callerUserId + " is not authorized to modify this expense");
+        }
+    }
+
     private String serializeExpenseState(Expense expense, List<SplitAllocation> allocations) {
         try {
             Map<String, Object> state = new HashMap<>();
@@ -145,7 +170,8 @@ public class ExpenseService {
                 expenseAt,
                 receiptUrl,
                 note,
-                splitType
+                splitType,
+                callerUserId
         );
         expense.setStatus(ExpenseStatus.UNSETTLED);
         expense.setExpenseType(ExpenseType.NORMAL);
@@ -214,6 +240,7 @@ public class ExpenseService {
 
         String workspaceId = expense.getWorkspaceId();
         verifyMember(workspaceId, callerUserId);
+        verifyCreatorOrAdmin(expense, callerUserId);
         getWorkspaceAndVerifyCurrency(workspaceId, currency);
 
         if (expenseDate.isAfter(LocalDate.now())) {
@@ -298,6 +325,7 @@ public class ExpenseService {
         }
 
         verifyMember(expense.getWorkspaceId(), callerUserId);
+        verifyCreatorOrAdmin(expense, callerUserId);
 
         // Capture state before soft-deleting
         List<SplitAllocation> oldAllocations = splitAllocationRepository.findByExpenseId(expenseId);

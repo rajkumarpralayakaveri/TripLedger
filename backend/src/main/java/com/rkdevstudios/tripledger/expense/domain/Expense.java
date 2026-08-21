@@ -51,6 +51,9 @@ public class Expense {
     @Column(name = "split_type", nullable = false, length = 20, columnDefinition = "VARCHAR(20) DEFAULT 'EQUAL'")
     private SplitType splitType = SplitType.EQUAL;
 
+    @Column(name = "created_by_user_id", length = 36)
+    private String createdByUserId;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -62,11 +65,16 @@ public class Expense {
 
     public Expense(String id, String workspaceId, String paidByUserId, Money money, String description,
                    String categoryId, LocalDate expenseDate) {
-        this(id, workspaceId, paidByUserId, money, description, categoryId, expenseDate, Instant.now(), null, null, SplitType.EQUAL);
+        this(id, workspaceId, paidByUserId, money, description, categoryId, expenseDate, Instant.now(), null, null, SplitType.EQUAL, null);
     }
 
     public Expense(String id, String workspaceId, String paidByUserId, Money money, String description,
                    String categoryId, LocalDate expenseDate, Instant expenseAt, String receiptUrl, String note, SplitType splitType) {
+        this(id, workspaceId, paidByUserId, money, description, categoryId, expenseDate, expenseAt, receiptUrl, note, splitType, null);
+    }
+
+    public Expense(String id, String workspaceId, String paidByUserId, Money money, String description,
+                   String categoryId, LocalDate expenseDate, Instant expenseAt, String receiptUrl, String note, SplitType splitType, String createdByUserId) {
         this.id = id;
         this.workspaceId = workspaceId;
         this.paidByUserId = paidByUserId;
@@ -78,6 +86,7 @@ public class Expense {
         this.receiptUrl = receiptUrl;
         this.note = note;
         this.splitType = splitType != null ? splitType : SplitType.EQUAL;
+        this.createdByUserId = createdByUserId;
     }
 
     @PreUpdate
@@ -129,4 +138,7 @@ public class Expense {
 
     public SplitType getSplitType() { return splitType; }
     public void setSplitType(SplitType splitType) { this.splitType = splitType; }
+
+    public String getCreatedByUserId() { return createdByUserId; }
+    public void setCreatedByUserId(String createdByUserId) { this.createdByUserId = createdByUserId; }
 }

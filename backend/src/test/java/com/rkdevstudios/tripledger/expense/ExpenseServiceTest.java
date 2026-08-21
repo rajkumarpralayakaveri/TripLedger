@@ -141,7 +141,7 @@ class ExpenseServiceTest {
         String workspaceId = "ws_1";
         String payerId = "usr_1";
 
-        Expense expense = new Expense(expenseId, workspaceId, payerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL);
+        Expense expense = new Expense(expenseId, workspaceId, payerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, payerId);
         expense.setStatus(ExpenseStatus.UNSETTLED);
         when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
 
@@ -201,5 +201,130 @@ class ExpenseServiceTest {
         assertEquals(receiptUrl, saved.getReceiptUrl());
         assertEquals(now, saved.getExpenseAt());
         assertEquals(note, saved.getNote());
+    }
+
+    @Test
+    void testUpdateExpense_MemberOwnExpense_Allowed() {
+        String expenseId = "exp_1";
+        String workspaceId = "ws_1";
+        String userId = "usr_member";
+        BigDecimal amount = BigDecimal.valueOf(1200);
+
+        Expense expense = new Expense(expenseId, workspaceId, userId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, userId);
+        expense.setStatus(ExpenseStatus.UNSETTLED);
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
+
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, "usr_admin");
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
+
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, userId, MemberRole.MEMBER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(Optional.of(m1));
+
+        Map<String, BigDecimal> shares = new HashMap<>();
+        shares.put(userId, amount);
+        when(splitCalculationService.calculateSplits(any(), any(), any(), any())).thenReturn(shares);
+        when(expenseRepository.save(any(Expense.class))).thenAnswer(i -> i.getArgument(0));
+
+        Expense result = expenseService.updateExpense(
+                expenseId, amount, "INR", "Lunch Updated", "cat_1",
+                LocalDate.now(), SplitType.EQUAL, Arrays.asList(userId), null, "Update reason", userId
+        );
+        assertNotNull(result);
+    }
+
+    @Test
+    void testUpdateExpense_MemberOtherExpense_Forbidden() {
+        String expenseId = "exp_1";
+        String workspaceId = "ws_1";
+        String ownerId = "usr_owner";
+        String callerId = "usr_caller";
+
+        Expense expense = new Expense(expenseId, workspaceId, ownerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, ownerId);
+        expense.setStatus(ExpenseStatus.UNSETTLED);
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
+
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, "usr_admin");
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
+
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, callerId, MemberRole.MEMBER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerId)).thenReturn(Optional.of(m1));
+
+        assertThrows(SecurityException.class, () -> {
+            expenseService.updateExpense(
+                    expenseId, BigDecimal.valueOf(1200), "INR", "Lunch Updated", "cat_1",
+                    LocalDate.now(), SplitType.EQUAL, Arrays.asList(callerId), null, "Update reason", callerId
+            );
+        });
+    }
+
+    @Test
+    void testUpdateExpense_AdminOtherExpense_Allowed() {
+        String expenseId = "exp_1";
+        String workspaceId = "ws_1";
+        String ownerId = "usr_owner";
+        String adminId = "usr_admin";
+        BigDecimal amount = BigDecimal.valueOf(1200);
+
+        Expense expense = new Expense(expenseId, workspaceId, ownerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, ownerId);
+        expense.setStatus(ExpenseStatus.UNSETTLED);
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
+
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, adminId);
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
+
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, adminId, MemberRole.ADMIN);
+        WorkspaceMember m2 = new WorkspaceMember(workspaceId, ownerId, MemberRole.MEMBER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, adminId)).thenReturn(Optional.of(m1));
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, ownerId)).thenReturn(Optional.of(m2));
+
+        Map<String, BigDecimal> shares = new HashMap<>();
+        shares.put(ownerId, amount);
+        when(splitCalculationService.calculateSplits(any(), any(), any(), any())).thenReturn(shares);
+        when(expenseRepository.save(any(Expense.class))).thenAnswer(i -> i.getArgument(0));
+
+        Expense result = expenseService.updateExpense(
+                expenseId, amount, "INR", "Lunch Updated", "cat_1",
+                LocalDate.now(), SplitType.EQUAL, Arrays.asList(ownerId), null, "Update reason", adminId
+        );
+        assertNotNull(result);
+    }
+
+    @Test
+    void testDeleteExpense_MemberOtherExpense_Forbidden() {
+        String expenseId = "exp_1";
+        String workspaceId = "ws_1";
+        String ownerId = "usr_owner";
+        String callerId = "usr_caller";
+
+        Expense expense = new Expense(expenseId, workspaceId, ownerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, ownerId);
+        expense.setStatus(ExpenseStatus.UNSETTLED);
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
+
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, callerId, MemberRole.MEMBER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, callerId)).thenReturn(Optional.of(m1));
+
+        assertThrows(SecurityException.class, () -> {
+            expenseService.deleteExpense(expenseId, "Delete reason", callerId);
+        });
+    }
+
+    @Test
+    void testDeleteExpense_AdminOtherExpense_Allowed() {
+        String expenseId = "exp_1";
+        String workspaceId = "ws_1";
+        String ownerId = "usr_owner";
+        String adminId = "usr_admin";
+
+        Expense expense = new Expense(expenseId, workspaceId, ownerId, new Money(BigDecimal.valueOf(1000), "INR"), "Lunch", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, ownerId);
+        expense.setStatus(ExpenseStatus.UNSETTLED);
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
+
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, adminId, MemberRole.ADMIN);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, adminId)).thenReturn(Optional.of(m1));
+
+        when(expenseRepository.save(any(Expense.class))).thenAnswer(i -> i.getArgument(0));
+
+        expenseService.deleteExpense(expenseId, "Delete reason", adminId);
+        assertEquals(ExpenseStatus.DELETED, expense.getStatus());
     }
 }
