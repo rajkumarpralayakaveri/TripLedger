@@ -188,6 +188,18 @@ public class ContributionService {
             String description,
             String callerUserId
     ) {
+        return recordAdjustment(workspaceId, userId, amount, description, null, callerUserId);
+    }
+
+    @Transactional
+    public ContributionEntry recordAdjustment(
+            String workspaceId,
+            String userId,
+            BigDecimal amount,
+            String description,
+            String referenceId,
+            String callerUserId
+    ) {
         verifyAuthorized(workspaceId, callerUserId);
         if (description == null || description.isBlank()) {
             throw new IllegalArgumentException("Adjustment requires a description/reason");
@@ -200,7 +212,7 @@ public class ContributionService {
                 ContributionEntryType.ADJUSTMENT,
                 amount,
                 description,
-                null
+                referenceId
         );
         return contributionEntryRepository.save(entry);
     }

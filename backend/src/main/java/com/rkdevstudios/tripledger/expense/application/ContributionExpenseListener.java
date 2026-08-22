@@ -47,6 +47,7 @@ public class ContributionExpenseListener {
                 old.getPaidByUserId(),
                 old.getMoney().getAmount().negate(),
                 "Expense updated correction for description: " + old.getDescription(),
+                old.getId(),
                 old.getPaidByUserId()
         );
 
@@ -70,6 +71,7 @@ public class ContributionExpenseListener {
                 expense.getPaidByUserId(),
                 expense.getMoney().getAmount().negate(),
                 "Expense deleted correction: " + event.reason(),
+                expense.getId(),
                 event.actorUserId()
         );
     }

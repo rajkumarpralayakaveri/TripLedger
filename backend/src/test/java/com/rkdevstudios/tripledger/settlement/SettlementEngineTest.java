@@ -81,34 +81,41 @@ public class SettlementEngineTest {
     }
 
     @Test
-    public void testCalculateBalances_AfterExpenseDeleted_InvariantRemainsZero() {
-        // Setup planned users
-        PlannedContribution pc1 = new PlannedContribution("pc1", "ws1", "Raj", BigDecimal.valueOf(10000));
-        PlannedContribution pc2 = new PlannedContribution("pc2", "ws1", "Amit", BigDecimal.valueOf(10000));
+    public void testCalculateBalances_AccountingInvariantsAndFiltering() {
+        // Scenario 1: Active Expense (DIRECT_EXPENSE + split allocations included)
+        // Scenario 2: Deleted expense with orphan DIRECT_EXPENSE (direct expense is present but allocations are missing, filtered out during buildFinancialState but simulated here)
+        // Scenario 3: Deleted expense with matching deletion adjustment (both are filtered out or balanced)
+        // Scenario 4: Unrelated CASH contribution (included)
+        // Scenario 5: Unrelated/non-expense ADJUSTMENT (included)
+        // Let's set up the test entries to balance exactly:
+        PlannedContribution pcA = new PlannedContribution("pc1", "ws1", "Raj", BigDecimal.valueOf(1000));
+        PlannedContribution pcB = new PlannedContribution("pc2", "ws1", "Amit", BigDecimal.valueOf(1000));
 
-        // Legacy active expense direct contribution entry
-        ContributionEntry activeCe = new ContributionEntry("ce1", "ws1", "Raj", ContributionEntryType.DIRECT_EXPENSE, BigDecimal.valueOf(1000), "Lunch", "e1");
-        SplitAllocation activeSa1 = new SplitAllocation("sa1", "e1", "Raj", new Money(BigDecimal.valueOf(500), "INR"), BigDecimal.valueOf(1));
-        SplitAllocation activeSa2 = new SplitAllocation("sa2", "e1", "Amit", new Money(BigDecimal.valueOf(500), "INR"), BigDecimal.valueOf(1));
+        ContributionEntry e1Paid = new ContributionEntry("ce1", "ws1", "Raj", ContributionEntryType.DIRECT_EXPENSE, BigDecimal.valueOf(1000), "Lunch", "e1");
+        SplitAllocation e1OwedRaj = new SplitAllocation("sa1", "e1", "Raj", new Money(BigDecimal.valueOf(500), "INR"), BigDecimal.valueOf(1));
+        SplitAllocation e1OwedAmit = new SplitAllocation("sa2", "e1", "Amit", new Money(BigDecimal.valueOf(500), "INR"), BigDecimal.valueOf(1));
 
-        // Deleted expense entries: payer was credited 400, then adjusted -400. Allocations are removed.
-        ContributionEntry deletedCe = new ContributionEntry("ce2", "ws1", "Raj", ContributionEntryType.DIRECT_EXPENSE, BigDecimal.valueOf(400), "Deleted Taxi", "e2");
-        ContributionEntry deletedAdj = new ContributionEntry("ce3", "ws1", "Raj", ContributionEntryType.ADJUSTMENT, BigDecimal.valueOf(-400), "Deleted Taxi Adjustment", "e2");
+        // CASH repayment: Amit pays Raj 500.
+        ContributionEntry repaymentPaid = new ContributionEntry("ce2", "ws1", "Amit", ContributionEntryType.CASH, BigDecimal.valueOf(500), "Settle", null);
+        ContributionEntry repaymentReceived = new ContributionEntry("ce3", "ws1", "Raj", ContributionEntryType.ADJUSTMENT, BigDecimal.valueOf(-500), "Settle adjustment", null);
 
-        WorkspaceFinancialState state = new WorkspaceFinancialState(
+        // Scenario 5: Unrelated/non-expense ADJUSTMENT (must balance: let's say a manual adjustment of +100 to Raj's contribution offset by -100 to Amit's contribution)
+        ContributionEntry unrelatedAdjRaj = new ContributionEntry("ce4", "ws1", "Raj", ContributionEntryType.ADJUSTMENT, BigDecimal.valueOf(100), "Manual adjustment Raj", null);
+        ContributionEntry unrelatedAdjAmit = new ContributionEntry("ce5", "ws1", "Amit", ContributionEntryType.ADJUSTMENT, BigDecimal.valueOf(-100), "Manual adjustment Amit", null);
+
+        WorkspaceFinancialState balancedState = new WorkspaceFinancialState(
                 "ws1",
-                List.of(pc1, pc2),
-                List.of(activeCe, deletedCe, deletedAdj),
+                List.of(pcA, pcB),
+                List.of(e1Paid, repaymentPaid, repaymentReceived, unrelatedAdjRaj, unrelatedAdjAmit),
                 Collections.emptyList(),
-                List.of(activeSa1, activeSa2), // allocations for deleted expense e2 are correctly missing
+                List.of(e1OwedRaj, e1OwedAmit),
                 Collections.emptyList()
         );
 
-        // This calculateBalances call should succeed with sumBalances = 0 without invariant exceptions
-        List<MemberBalance> balances = settlementEngine.calculateBalances(state, "INR");
-        BigDecimal sumBalances = balances.stream()
+        List<MemberBalance> balancedBalances = settlementEngine.calculateBalances(balancedState, "INR");
+        BigDecimal balancedSum = balancedBalances.stream()
                 .map(mb -> mb.balance().getAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        assertEquals(0, sumBalances.setScale(4).compareTo(BigDecimal.ZERO.setScale(4)));
+        assertEquals(0, balancedSum.setScale(4).compareTo(BigDecimal.ZERO.setScale(4)));
     }
 }

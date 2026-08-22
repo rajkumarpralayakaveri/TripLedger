@@ -69,6 +69,32 @@ public class SettlementService {
         List<ContributionEntry> ces = contributionEntryRepository.findByWorkspaceId(workspaceId);
         List<Expense> exps = expenseRepository.findByWorkspaceIdAndStatusNot(workspaceId, ExpenseStatus.DELETED);
 
+        // Identify all deleted expenses in this workspace to filter out orphaned ledger entries
+        List<Expense> allExpenses = expenseRepository.findByWorkspaceIdAndStatusNot(workspaceId, ExpenseStatus.UNSETTLED); // Querying with a dummy non-deleted status is not possible cleanly, so let's find them or use referenceId matches
+        // Actually, we can just find active expense IDs, and if entry is DIRECT_EXPENSE or an ADJUSTMENT that references an expense, we verify the referenced expense is not deleted.
+        // Let's get the list of active expense IDs
+        java.util.Set<String> activeExpenseIds = exps.stream()
+                .map(Expense::getId)
+                .collect(Collectors.toSet());
+
+        List<ContributionEntry> activeCes = ces.stream()
+                .filter(ce -> {
+                    if (ce.getEntryType() == com.rkdevstudios.tripledger.contribution.domain.ContributionEntryType.DIRECT_EXPENSE) {
+                        return activeExpenseIds.contains(ce.getReferenceId());
+                    }
+                    if (ce.getEntryType() == com.rkdevstudios.tripledger.contribution.domain.ContributionEntryType.ADJUSTMENT) {
+                        // If the adjustment has a referenceId and it references an expense, check if it's active.
+                        // Non-expense adjustments (like repayments or other manual adjustments) have null referenceId and remain included.
+                        String refId = ce.getReferenceId();
+                        if (refId != null) {
+                            return activeExpenseIds.contains(refId);
+                        }
+                        return true;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
         List<SplitAllocation> allocations = new ArrayList<>();
         for (Expense e : exps) {
             allocations.addAll(splitAllocationRepository.findByExpenseId(e.getId()));
@@ -78,7 +104,7 @@ public class SettlementService {
                 .filter(st -> st.getStatus() == SettlementStatus.CONFIRMED)
                 .collect(Collectors.toList());
 
-        return new WorkspaceFinancialState(workspaceId, pcs, ces, exps, allocations, confirmed);
+        return new WorkspaceFinancialState(workspaceId, pcs, activeCes, exps, allocations, confirmed);
     }
 
     public SettlementPlan generatePlan(String workspaceId) {
