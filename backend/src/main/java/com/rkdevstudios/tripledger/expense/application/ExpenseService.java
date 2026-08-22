@@ -253,9 +253,26 @@ public class ExpenseService {
             throw new IllegalArgumentException("Update action requires a reason");
         }
 
-        // Deep copy of old state for audit logging
+        // Deep copy of old state for audit logging and event publishing
+        Expense oldExpense = new Expense(
+                expense.getId(),
+                expense.getWorkspaceId(),
+                expense.getPaidByUserId(),
+                new Money(expense.getMoney().getAmount(), expense.getMoney().getCurrency()),
+                expense.getDescription(),
+                expense.getCategoryId(),
+                expense.getExpenseDate(),
+                expense.getExpenseAt(),
+                expense.getReceiptUrl(),
+                expense.getNote(),
+                expense.getSplitType(),
+                expense.getCreatedByUserId()
+        );
+        oldExpense.setStatus(expense.getStatus());
+        oldExpense.setExpenseType(expense.getExpenseType());
+
         List<SplitAllocation> oldAllocations = splitAllocationRepository.findByExpenseId(expenseId);
-        String beforeJson = serializeExpenseState(expense, oldAllocations);
+        String beforeJson = serializeExpenseState(oldExpense, oldAllocations);
 
         // Perform splits recalculations
         Map<String, BigDecimal> calculatedShares = splitCalculationService.calculateSplits(
@@ -304,7 +321,7 @@ public class ExpenseService {
         expenseHistoryRepository.save(history);
 
         // Publish event to recalculate contribution ledgers & logs
-        eventPublisher.publishEvent(new ExpenseUpdatedEvent(expense, updatedExpense));
+        eventPublisher.publishEvent(new ExpenseUpdatedEvent(oldExpense, updatedExpense));
 
         return updatedExpense;
     }

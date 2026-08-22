@@ -328,4 +328,40 @@ class ExpenseServiceTest {
         expenseService.deleteExpense(expenseId, "Delete reason", adminId);
         assertEquals(ExpenseStatus.DELETED, expense.getStatus());
     }
+
+    @Test
+    void testUpdateExpense_DeepCopiesOldExpense_CorrectEventPayload() {
+        String expenseId = "exp_1";
+        String workspaceId = "ws_1";
+        String userId = "usr_1";
+        BigDecimal originalAmount = BigDecimal.valueOf(500);
+        BigDecimal updatedAmount = BigDecimal.valueOf(100);
+
+        Expense expense = new Expense(expenseId, workspaceId, userId, new Money(originalAmount, "INR"), "Evening Snacks", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, userId);
+        expense.setStatus(ExpenseStatus.UNSETTLED);
+        when(expenseRepository.findById(expenseId)).thenReturn(Optional.of(expense));
+
+        Workspace ws = new Workspace(workspaceId, "Goa", "Fun", LocalDate.now(), LocalDate.now().plusDays(5), "INR", BigDecimal.valueOf(50000), 5, userId);
+        when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.of(ws));
+
+        WorkspaceMember m1 = new WorkspaceMember(workspaceId, userId, MemberRole.ADMIN);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)).thenReturn(Optional.of(m1));
+
+        Map<String, BigDecimal> shares = new HashMap<>();
+        shares.put(userId, updatedAmount);
+        when(splitCalculationService.calculateSplits(any(), any(), any(), any())).thenReturn(shares);
+        when(expenseRepository.save(any(Expense.class))).thenAnswer(i -> i.getArgument(0));
+
+        expenseService.updateExpense(
+                expenseId, updatedAmount, "INR", "Evening Snacks Updated", "cat_1",
+                LocalDate.now(), SplitType.EQUAL, Arrays.asList(userId), null, "Updating amount", userId
+        );
+
+        ArgumentCaptor<ExpenseUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(ExpenseUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        ExpenseUpdatedEvent event = eventCaptor.getValue();
+
+        assertEquals(originalAmount.setScale(4), event.oldExpense().getMoney().getAmount().setScale(4));
+        assertEquals(updatedAmount.setScale(4), event.newExpense().getMoney().getAmount().setScale(4));
+    }
 }
