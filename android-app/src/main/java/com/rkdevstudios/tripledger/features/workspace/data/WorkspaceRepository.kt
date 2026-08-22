@@ -422,4 +422,103 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
             Result.failure(e)
         }
     }
+
+    suspend fun getBalances(workspaceId: String): Result<List<com.rkdevstudios.tripledger.features.settlement.domain.MemberBalanceItem>> {
+        return try {
+            val response = workspaceApiService.getBalances(workspaceId)
+            if (response.success && response.data != null) {
+                val mapped = response.data.balances.map { dto ->
+                    com.rkdevstudios.tripledger.features.settlement.domain.MemberBalanceItem(
+                        userId = dto.userId,
+                        userName = dto.userName,
+                        paid = dto.paid,
+                        owed = dto.owed,
+                        balance = dto.balance
+                    )
+                }
+                Result.success(mapped)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to fetch balances"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getSettlementPlan(workspaceId: String, currency: String = "INR"): Result<com.rkdevstudios.tripledger.features.settlement.domain.SettlementPlanItem> {
+        return try {
+            val response = workspaceApiService.getSettlementPlan(workspaceId)
+            if (response.success && response.data != null) {
+                val data = response.data
+                val transfers = data.transfers.map { dto ->
+                    com.rkdevstudios.tripledger.features.settlement.domain.SettlementTransferItem(
+                        id = dto.id,
+                        fromUserId = dto.fromUserId,
+                        fromUserName = dto.fromUserName,
+                        toUserId = dto.toUserId,
+                        toUserName = dto.toUserName,
+                        amount = dto.amount,
+                        currency = currency
+                    )
+                }
+                Result.success(
+                    com.rkdevstudios.tripledger.features.settlement.domain.SettlementPlanItem(
+                        sessionId = data.sessionId,
+                        workspaceId = data.workspaceId,
+                        transfers = transfers,
+                        stateHash = data.stateHash,
+                        planVersion = data.planVersion
+                    )
+                )
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to fetch settlement plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun confirmTransfer(workspaceId: String, transferId: String, sessionId: String): Result<Unit> {
+        return try {
+            val request = com.rkdevstudios.tripledger.features.workspace.data.api.ConfirmSettlementRequestDto(sessionId)
+            val response = workspaceApiService.confirmTransfer(workspaceId, transferId, request)
+            if (response.success) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to confirm settlement transfer"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getSettlementHistory(workspaceId: String): Result<List<com.rkdevstudios.tripledger.features.settlement.domain.SettlementHistoryGroupItem>> {
+        return try {
+            val response = workspaceApiService.getSettlementHistory(workspaceId)
+            if (response.success && response.data != null) {
+                val mapped = response.data.history.map { groupDto ->
+                    com.rkdevstudios.tripledger.features.settlement.domain.SettlementHistoryGroupItem(
+                        date = LocalDate.parse(groupDto.date),
+                        transactions = groupDto.transactions.map { itemDto ->
+                            com.rkdevstudios.tripledger.features.settlement.domain.SettlementHistoryItem(
+                                id = itemDto.id,
+                                fromUserId = itemDto.fromUserId,
+                                fromUserName = itemDto.fromUserName,
+                                toUserId = itemDto.toUserId,
+                                toUserName = itemDto.toUserName,
+                                amount = itemDto.amount.amount,
+                                currency = itemDto.amount.currency,
+                                confirmedAt = itemDto.confirmedAt
+                            )
+                        }
+                    )
+                }
+                Result.success(mapped)
+            } else {
+                Result.failure(Exception(response.error?.message ?: "Failed to fetch settlement history"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -189,11 +189,11 @@ class WorkspaceViewModel(
         }
         
         refreshExpenseTimeline(id)
+        refreshBalances(id)
+        refreshSettlementPlan(id)
+        refreshSettlementHistory(id)
 
         _currentActivities.value = _activities.value[id] ?: emptyList()
-        _currentBalances.value = _balances.value[id] ?: emptyList()
-        _currentPlan.value = _plans.value[id]
-        _currentHistory.value = _history.value[id] ?: emptyList()
     }
 
     fun refreshExpenseTimeline(id: String) {
@@ -229,59 +229,54 @@ class WorkspaceViewModel(
         }
     }
 
-    fun confirmMockTransfer(workspaceId: String, transferId: String) {
-        val plan = _plans.value[workspaceId] ?: return
-        val transfer = plan.transfers.find { it.id == transferId } ?: return
-
-        val updatedTransfers = plan.transfers.filter { it.id != transferId }
-        val updatedPlan = plan.copy(transfers = updatedTransfers, planVersion = plan.planVersion + 1)
-        _plans.value = _plans.value + (workspaceId to updatedPlan)
-
-        val currentBalancesList = _balances.value[workspaceId] ?: emptyList()
-        val updatedBalancesList = currentBalancesList.map { mb ->
-            when (mb.userId) {
-                transfer.fromUserId -> mb.copy(
-                    paid = mb.paid + transfer.amount,
-                    balance = mb.balance + transfer.amount
-                )
-                transfer.toUserId -> mb.copy(
-                    paid = mb.paid - transfer.amount,
-                    balance = mb.balance - transfer.amount
-                )
-                else -> mb
-            }
+    fun refreshBalances(workspaceId: String) {
+        viewModelScope.launch {
+            workspaceRepository.getBalances(workspaceId).fold(
+                onSuccess = { balancesList ->
+                    _currentBalances.value = balancesList
+                },
+                onFailure = { _ -> }
+            )
         }
-        _balances.value = _balances.value + (workspaceId to updatedBalancesList)
+    }
 
-        val newHistoryItem = SettlementHistoryItem(
-            id = "hist_${System.currentTimeMillis()}",
-            fromUserId = transfer.fromUserId,
-            fromUserName = transfer.fromUserName,
-            toUserId = transfer.toUserId,
-            toUserName = transfer.toUserName,
-            amount = transfer.amount,
-            currency = transfer.currency,
-            confirmedAt = "Just now"
-        )
-        val currentHistGroups = _history.value[workspaceId] ?: emptyList()
-        val todayGroup = currentHistGroups.find { it.date == LocalDate.now() }
-        val updatedHistGroups = if (todayGroup != null) {
-            currentHistGroups.map {
-                if (it.date == LocalDate.now()) it.copy(transactions = listOf(newHistoryItem) + it.transactions) else it
-            }
-        } else {
-            listOf(SettlementHistoryGroupItem(LocalDate.now(), listOf(newHistoryItem))) + currentHistGroups
+    fun refreshSettlementPlan(workspaceId: String) {
+        viewModelScope.launch {
+            workspaceRepository.getSettlementPlan(workspaceId).fold(
+                onSuccess = { plan ->
+                    _currentPlan.value = plan
+                },
+                onFailure = { _ -> }
+            )
         }
-        _history.value = _history.value + (workspaceId to updatedHistGroups)
+    }
 
-        val newActivity = ActivityFeedItem(
-            id = "act_${System.currentTimeMillis()}",
-            message = "${transfer.fromUserName} paid ${transfer.toUserName} ${transfer.currency} ${transfer.amount}",
-            timestamp = "Just now"
-        )
-        _activities.value = _activities.value + (workspaceId to (listOf(newActivity) + (_activities.value[workspaceId] ?: emptyList())))
+    fun refreshSettlementHistory(workspaceId: String) {
+        viewModelScope.launch {
+            workspaceRepository.getSettlementHistory(workspaceId).fold(
+                onSuccess = { historyList ->
+                    _currentHistory.value = historyList
+                },
+                onFailure = { _ -> }
+            )
+        }
+    }
 
-        selectWorkspace(workspaceId)
+    fun confirmTransfer(workspaceId: String, transferId: String, sessionId: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            workspaceRepository.confirmTransfer(workspaceId, transferId, sessionId).fold(
+                onSuccess = {
+                    refreshBalances(workspaceId)
+                    refreshSettlementPlan(workspaceId)
+                    refreshSettlementHistory(workspaceId)
+                    refreshFinancialSummary(workspaceId)
+                    onSuccess()
+                },
+                onFailure = { error ->
+                    onError(error.message ?: "Failed to confirm settlement transfer")
+                }
+            )
+        }
     }
 
     fun createWorkspace(

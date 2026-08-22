@@ -79,4 +79,36 @@ public class SettlementEngineTest {
             settlementEngine.calculateBalances(state, "INR");
         });
     }
+
+    @Test
+    public void testCalculateBalances_AfterExpenseDeleted_InvariantRemainsZero() {
+        // Setup planned users
+        PlannedContribution pc1 = new PlannedContribution("pc1", "ws1", "Raj", BigDecimal.valueOf(10000));
+        PlannedContribution pc2 = new PlannedContribution("pc2", "ws1", "Amit", BigDecimal.valueOf(10000));
+
+        // Legacy active expense direct contribution entry
+        ContributionEntry activeCe = new ContributionEntry("ce1", "ws1", "Raj", ContributionEntryType.DIRECT_EXPENSE, BigDecimal.valueOf(1000), "Lunch", "e1");
+        SplitAllocation activeSa1 = new SplitAllocation("sa1", "e1", "Raj", new Money(BigDecimal.valueOf(500), "INR"), BigDecimal.valueOf(1));
+        SplitAllocation activeSa2 = new SplitAllocation("sa2", "e1", "Amit", new Money(BigDecimal.valueOf(500), "INR"), BigDecimal.valueOf(1));
+
+        // Deleted expense entries: payer was credited 400, then adjusted -400. Allocations are removed.
+        ContributionEntry deletedCe = new ContributionEntry("ce2", "ws1", "Raj", ContributionEntryType.DIRECT_EXPENSE, BigDecimal.valueOf(400), "Deleted Taxi", "e2");
+        ContributionEntry deletedAdj = new ContributionEntry("ce3", "ws1", "Raj", ContributionEntryType.ADJUSTMENT, BigDecimal.valueOf(-400), "Deleted Taxi Adjustment", "e2");
+
+        WorkspaceFinancialState state = new WorkspaceFinancialState(
+                "ws1",
+                List.of(pc1, pc2),
+                List.of(activeCe, deletedCe, deletedAdj),
+                Collections.emptyList(),
+                List.of(activeSa1, activeSa2), // allocations for deleted expense e2 are correctly missing
+                Collections.emptyList()
+        );
+
+        // This calculateBalances call should succeed with sumBalances = 0 without invariant exceptions
+        List<MemberBalance> balances = settlementEngine.calculateBalances(state, "INR");
+        BigDecimal sumBalances = balances.stream()
+                .map(mb -> mb.balance().getAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, sumBalances.setScale(4).compareTo(BigDecimal.ZERO.setScale(4)));
+    }
 }

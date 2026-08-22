@@ -133,6 +133,43 @@ class WorkspacePermissionsUiTest {
             lastDeletedExpenseId = expenseId
             return NetworkResponse(true, Unit, null)
         }
+
+        var lastConfirmedTransferId: String? = null
+
+        override suspend fun getBalances(workspaceId: String): NetworkResponse<BalancesResponseDto> {
+            return NetworkResponse(true, BalancesResponseDto(listOf(
+                MemberBalanceResponseDto("usr_raj", "Raj", BigDecimal.valueOf(1000), BigDecimal.valueOf(500), BigDecimal.valueOf(500))
+            )), null)
+        }
+
+        override suspend fun getSettlementPlan(workspaceId: String): NetworkResponse<SettlementPlanResponseDto> {
+            return NetworkResponse(true, SettlementPlanResponseDto(
+                sessionId = "sess_123",
+                workspaceId = workspaceId,
+                transfers = listOf(
+                    SettlementTransferResponseDto("t_1", "usr_member", "Regular Member", "usr_admin", "Admin User", BigDecimal.valueOf(500))
+                ),
+                stateHash = "hash1",
+                planVersion = 1
+            ), null)
+        }
+
+        override suspend fun confirmTransfer(
+            workspaceId: String,
+            transferId: String,
+            request: ConfirmSettlementRequestDto
+        ): NetworkResponse<Unit> {
+            lastConfirmedTransferId = transferId
+            return NetworkResponse(true, Unit, null)
+        }
+
+        override suspend fun getSettlementHistory(workspaceId: String): NetworkResponse<SettlementHistoryResponseDto> {
+            return NetworkResponse(true, SettlementHistoryResponseDto(listOf(
+                SettlementHistoryGroupDto("2026-08-20", listOf(
+                    SettlementHistoryItemDto("hist_1", "usr_member", "Regular Member", "usr_admin", "Admin User", MoneyDto(BigDecimal.valueOf(500), "INR"), "2026-08-20T12:00:00Z")
+                ))
+            )), null)
+        }
     }
 
     @Test
@@ -283,6 +320,60 @@ class WorkspacePermissionsUiTest {
             )
             assertTrue(result.isSuccess)
             assertEquals("e_1", fakeApi.lastDeletedExpenseId)
+        }
+    }
+
+    @Test
+    fun getBalances_callsBalancesApi() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.getBalances("ws_1")
+            assertTrue(result.isSuccess)
+            val list = result.getOrThrow()
+            assertEquals(1, list.size)
+            assertEquals("Raj", list.first().userName)
+        }
+    }
+
+    @Test
+    fun getSettlementPlan_callsPlanApi() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.getSettlementPlan("ws_1")
+            assertTrue(result.isSuccess)
+            val plan = result.getOrThrow()
+            assertEquals("sess_123", plan.sessionId)
+            assertEquals("usr_member", plan.transfers.first().fromUserId)
+        }
+    }
+
+    @Test
+    fun confirmTransfer_callsConfirmApi() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.confirmTransfer("ws_1", "t_1", "sess_123")
+            assertTrue(result.isSuccess)
+            assertEquals("t_1", fakeApi.lastConfirmedTransferId)
+        }
+    }
+
+    @Test
+    fun getSettlementHistory_callsHistoryApi() {
+        val fakeApi = PermissionsFakeApiService()
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.getSettlementHistory("ws_1")
+            assertTrue(result.isSuccess)
+            val list = result.getOrThrow()
+            assertEquals(1, list.size)
+            assertEquals("usr_member", list.first().transactions.first().fromUserId)
         }
     }
 }

@@ -117,6 +117,28 @@ interface WorkspaceApiService {
         @Path("expenseId") expenseId: String,
         @retrofit2.http.Body request: DeleteExpenseRequestDto
     ): NetworkResponse<Unit>
+
+    @GET("api/v1/workspaces/{id}/balances")
+    suspend fun getBalances(
+        @Path("id") workspaceId: String
+    ): NetworkResponse<BalancesResponseDto>
+
+    @GET("api/v1/workspaces/{id}/settlements/plan")
+    suspend fun getSettlementPlan(
+        @Path("id") workspaceId: String
+    ): NetworkResponse<SettlementPlanResponseDto>
+
+    @retrofit2.http.POST("api/v1/workspaces/{id}/settlements/{transferId}/confirm")
+    suspend fun confirmTransfer(
+        @Path("id") workspaceId: String,
+        @Path("transferId") transferId: String,
+        @retrofit2.http.Body request: ConfirmSettlementRequestDto
+    ): NetworkResponse<Unit>
+
+    @GET("api/v1/workspaces/{id}/settlements/history")
+    suspend fun getSettlementHistory(
+        @Path("id") workspaceId: String
+    ): NetworkResponse<SettlementHistoryResponseDto>
 }
 
 data class UpdateMemberRoleRequestDto(
@@ -352,3 +374,62 @@ data class ExpenseTimelineGroupDto(
 data class ExpenseTimelineResponseDto(
     val timeline: List<ExpenseTimelineGroupDto>
 )
+
+// Settlement and Balance DTOs
+data class MemberBalanceResponseDto(
+    val userId: String,
+    val userName: String,
+    val paid: BigDecimal,
+    val owed: BigDecimal,
+    val balance: BigDecimal
+)
+
+data class BalancesResponseDto(
+    val balances: List<MemberBalanceResponseDto>
+)
+
+data class SettlementTransferResponseDto(
+    val id: String,
+    val fromUserId: String,
+    val fromUserName: String,
+    val toUserId: String,
+    val toUserName: String,
+    val amount: BigDecimal
+)
+
+data class SettlementPlanResponseDto(
+    val sessionId: String,
+    val workspaceId: String,
+    val transfers: List<SettlementTransferResponseDto>,
+    val stateHash: String,
+    val planVersion: Int
+)
+
+data class ConfirmSettlementRequestDto(
+    val sessionId: String
+)
+
+data class SettlementHistoryItemDto(
+    val id: String,
+    val fromUserId: String,
+    val fromUserName: String,
+    val toUserId: String,
+    val toUserName: String,
+    val amount: com.rkdevstudios.tripledger.features.workspace.data.api.MoneyDto,
+    val confirmedAt: String
+)
+
+data class MoneyDto(
+    val amount: BigDecimal,
+    val currency: String
+)
+
+data class SettlementHistoryGroupDto(
+    val date: String,
+    val transactions: List<SettlementHistoryItemDto>
+)
+
+data class SettlementHistoryResponseDto(
+    val history: List<SettlementHistoryGroupDto>
+)
+

@@ -154,6 +154,7 @@ class ExpenseServiceTest {
 
         assertEquals(ExpenseStatus.DELETED, expense.getStatus());
         verify(expenseRepository, times(1)).save(expense);
+        verify(splitAllocationRepository, times(1)).deleteByExpenseId(expenseId);
         verify(eventPublisher, times(1)).publishEvent(any(ExpenseDeletedEvent.class));
     }
 

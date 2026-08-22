@@ -123,6 +123,26 @@ class WorkspaceViewModelInitTest {
         ): NetworkResponse<Unit> {
             return NetworkResponse(true, Unit, null)
         }
+
+        override suspend fun getBalances(workspaceId: String): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.BalancesResponseDto> {
+            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.BalancesResponseDto(emptyList()), null)
+        }
+
+        override suspend fun getSettlementPlan(workspaceId: String): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.SettlementPlanResponseDto> {
+            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.SettlementPlanResponseDto("s1", workspaceId, emptyList(), "h1", 1), null)
+        }
+
+        override suspend fun confirmTransfer(
+            workspaceId: String,
+            transferId: String,
+            request: com.rkdevstudios.tripledger.features.workspace.data.api.ConfirmSettlementRequestDto
+        ): NetworkResponse<Unit> {
+            return NetworkResponse(true, Unit, null)
+        }
+
+        override suspend fun getSettlementHistory(workspaceId: String): NetworkResponse<com.rkdevstudios.tripledger.features.workspace.data.api.SettlementHistoryResponseDto> {
+            return NetworkResponse(true, com.rkdevstudios.tripledger.features.workspace.data.api.SettlementHistoryResponseDto(emptyList()), null)
+        }
     }
 
     @Test

@@ -36,7 +36,8 @@ class ExpenseSerializationTest {
                 receiptUrl,
                 "Sunset snacks",
                 "EQUAL",
-                java.util.Collections.emptyList()
+                java.util.Collections.emptyList(),
+                "usr_1"
         );
 
         String json = objectMapper.writeValueAsString(item);

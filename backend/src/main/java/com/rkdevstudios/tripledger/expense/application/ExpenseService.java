@@ -334,6 +334,9 @@ public class ExpenseService {
         expense.setStatus(ExpenseStatus.DELETED);
         Expense deletedExpense = expenseRepository.save(expense);
 
+        // Delete split allocations cleanly to prevent balance/settlement invariant failures
+        splitAllocationRepository.deleteByExpenseId(expenseId);
+
         String afterJson = serializeExpenseState(deletedExpense, oldAllocations);
 
         ExpenseHistory history = new ExpenseHistory(

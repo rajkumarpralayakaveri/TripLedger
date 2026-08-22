@@ -71,7 +71,7 @@ fun SettlementPlanScreen(
                             TripButton(
                                 text = "Confirm",
                                 onClick = {
-                                    viewModel.confirmMockTransfer(workspaceId, transfer.id)
+                                    viewModel.confirmTransfer(workspaceId, transfer.id, plan?.sessionId ?: "")
                                 }
                             )
                         }
