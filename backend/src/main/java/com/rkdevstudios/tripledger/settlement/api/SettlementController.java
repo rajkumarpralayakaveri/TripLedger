@@ -63,25 +63,17 @@ public class SettlementController {
 
         SettlementPlan plan = settlementService.generatePlan(id);
 
-        System.out.println("[SETTLEMENT_DEBUG] plan.transfers size: " + (plan.transfers() != null ? plan.transfers().size() : 0));
         Map<String, String> names = new HashMap<>();
         List<SettlementPlanResponse.SettlementTransferResponse> transferResponses = plan.transfers().stream()
                 .map(t -> new SettlementPlanResponse.SettlementTransferResponse(
-                         t.id(),
-                         t.fromUserId(),
-                         getUserName(t.fromUserId(), names),
-                         t.toUserId(),
-                         getUserName(t.toUserId(), names),
-                         t.amount()
+                        t.id(),
+                        t.fromUserId(),
+                        getUserName(t.fromUserId(), names),
+                        t.toUserId(),
+                        getUserName(t.toUserId(), names),
+                        t.amount()
                 ))
                 .collect(Collectors.toList());
-        System.out.println("[SETTLEMENT_DEBUG] transferResponses DTO size: " + transferResponses.size());
-        for (SettlementPlanResponse.SettlementTransferResponse tr : transferResponses) {
-            System.out.println("[SETTLEMENT_DEBUG] Transfer DTO: " + tr.id() 
-                + " From: " + tr.fromUserName() + " (" + tr.fromUserId() + ")"
-                + " To: " + tr.toUserName() + " (" + tr.toUserId() + ")"
-                + " Amount: " + tr.amount().getAmount());
-        }
 
         SettlementPlanResponse response = new SettlementPlanResponse(
                 plan.sessionId(),

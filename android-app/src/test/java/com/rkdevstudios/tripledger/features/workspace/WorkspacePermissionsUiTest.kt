@@ -147,7 +147,7 @@ class WorkspacePermissionsUiTest {
                 sessionId = "sess_123",
                 workspaceId = workspaceId,
                 transfers = listOf(
-                    SettlementTransferResponseDto("t_1", "usr_member", "Regular Member", "usr_admin", "Admin User", BigDecimal.valueOf(500))
+                    SettlementTransferResponseDto("t_1", "usr_member", "Regular Member", "usr_admin", "Admin User", MoneyDto(BigDecimal.valueOf(500), "INR"))
                 ),
                 stateHash = "hash1",
                 planVersion = 1

@@ -90,4 +90,44 @@ class ExampleUnitTest {
         assertEquals("PENDING", dto.status)
         assertEquals("https://res.cloudinary.com/demo/image/upload/v1580518928/sample.jpg", dto.viewUrl)
     }
+
+    @Test
+    fun testSettlementPlanDeserialization() {
+        val json = """
+            {
+                "sessionId": "sess_123",
+                "workspaceId": "ws_1",
+                "transfers": [
+                    {
+                        "id": "t_1",
+                        "fromUserId": "usr_member",
+                        "fromUserName": "Regular Member",
+                        "toUserId": "usr_admin",
+                        "toUserName": "Admin User",
+                        "amount": {
+                            "amount": 33.3333,
+                            "currency": "INR"
+                        }
+                    }
+                ],
+                "stateHash": "hash1",
+                "planVersion": 1
+            }
+        """.trimIndent()
+
+        val gson = com.google.gson.Gson()
+        val dto = gson.fromJson(json, com.rkdevstudios.tripledger.features.workspace.data.api.SettlementPlanResponseDto::class.java)
+
+        assertEquals("sess_123", dto.sessionId)
+        assertEquals(1, dto.transfers.size)
+        
+        val transfer = dto.transfers[0]
+        assertEquals("t_1", transfer.id)
+        assertEquals("usr_member", transfer.fromUserId)
+        assertEquals("Regular Member", transfer.fromUserName)
+        assertEquals("usr_admin", transfer.toUserId)
+        assertEquals("Admin User", transfer.toUserName)
+        assertEquals(0, java.math.BigDecimal("33.3333").compareTo(transfer.amount.amount))
+        assertEquals("INR", transfer.amount.currency)
+    }
 }

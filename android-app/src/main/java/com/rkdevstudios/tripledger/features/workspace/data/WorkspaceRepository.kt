@@ -457,8 +457,8 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                         fromUserName = dto.fromUserName,
                         toUserId = dto.toUserId,
                         toUserName = dto.toUserName,
-                        amount = dto.amount,
-                        currency = currency
+                        amount = dto.amount.amount,
+                        currency = dto.amount.currency
                     )
                 }
                 Result.success(
