@@ -113,7 +113,17 @@ public class SettlementService {
         String stateHash = state.calculateStateHash();
 
         List<MemberBalance> balances = settlementEngine.calculateBalances(state, workspace.getBaseCurrency());
+        System.out.println("[SETTLEMENT_DEBUG] Balances size: " + (balances != null ? balances.size() : 0));
+        if (balances != null) {
+            for (MemberBalance mb : balances) {
+                System.out.println("[SETTLEMENT_DEBUG] Member: " + mb.userId() 
+                    + " Paid: " + mb.paid().getAmount() 
+                    + " Owed: " + mb.owed().getAmount() 
+                    + " Bal: " + mb.balance().getAmount());
+            }
+        }
         List<SettlementTransfer> transfers = settlementOptimizer.optimize(balances, workspace.getBaseCurrency());
+        System.out.println("[SETTLEMENT_DEBUG] Optimized transfers size: " + (transfers != null ? transfers.size() : 0));
 
         int version = sessionRepository.findByWorkspaceId(workspaceId).size() + 1;
         String sessionId = UUID.randomUUID().toString();
