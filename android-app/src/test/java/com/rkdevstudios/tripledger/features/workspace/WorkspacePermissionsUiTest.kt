@@ -9,7 +9,7 @@ import java.math.BigDecimal
 
 class WorkspacePermissionsUiTest {
 
-    private class PermissionsFakeApiService : WorkspaceApiService {
+    private open class PermissionsFakeApiService : WorkspaceApiService {
         var lastUpdatedRole: String? = null
         var lastRemovedUserId: String? = null
         var lastArchivedWorkspaceId: String? = null
@@ -374,6 +374,46 @@ class WorkspacePermissionsUiTest {
             val list = result.getOrThrow()
             assertEquals(1, list.size)
             assertEquals("usr_member", list.first().transactions.first().fromUserId)
+        }
+    }
+
+    @Test
+    fun getSettlementPlan_mapsMultipleTransfersSuccessfully() {
+        val fakeApi = object : PermissionsFakeApiService() {
+            override suspend fun getSettlementPlan(workspaceId: String): NetworkResponse<SettlementPlanResponseDto> {
+                return NetworkResponse(true, SettlementPlanResponseDto(
+                    sessionId = "sess_multi",
+                    workspaceId = workspaceId,
+                    transfers = listOf(
+                        SettlementTransferResponseDto("t_1", "usr_1", "User One", "usr_2", "User Two", MoneyDto(BigDecimal.valueOf(100), "INR")),
+                        SettlementTransferResponseDto("t_2", "usr_3", "User Three", "usr_2", "User Two", MoneyDto(BigDecimal.valueOf(250), "INR"))
+                    ),
+                    stateHash = "hash_multi",
+                    planVersion = 2
+                ), null)
+            }
+        }
+        val repository = WorkspaceRepository(fakeApi)
+        kotlinx.coroutines.runBlocking {
+            val result = repository.getSettlementPlan("ws_1")
+            assertTrue(result.isSuccess)
+            val plan = result.getOrThrow()
+            assertEquals("sess_multi", plan.sessionId)
+            assertEquals(2, plan.transfers.size)
+            
+            val t1 = plan.transfers[0]
+            assertEquals("t_1", t1.id)
+            assertEquals("User One", t1.fromUserName)
+            assertEquals("User Two", t1.toUserName)
+            assertEquals(0, BigDecimal.valueOf(100).compareTo(t1.amount))
+            assertEquals("INR", t1.currency)
+
+            val t2 = plan.transfers[1]
+            assertEquals("t_2", t2.id)
+            assertEquals("User Three", t2.fromUserName)
+            assertEquals("User Two", t2.toUserName)
+            assertEquals(0, BigDecimal.valueOf(250).compareTo(t2.amount))
+            assertEquals("INR", t2.currency)
         }
     }
 }

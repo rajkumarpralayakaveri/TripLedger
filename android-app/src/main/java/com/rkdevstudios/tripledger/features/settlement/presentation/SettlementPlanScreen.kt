@@ -21,8 +21,12 @@ fun SettlementPlanScreen(
     viewModel: WorkspaceViewModel,
     onNavigateBack: () -> Unit
 ) {
-    viewModel.selectWorkspace(workspaceId)
+    androidx.compose.runtime.LaunchedEffect(workspaceId) {
+        System.out.println("[SETTLEMENT_DEBUG] SettlementPlanScreen LaunchedEffect selectWorkspace: " + workspaceId)
+        viewModel.selectWorkspace(workspaceId)
+    }
     val plan by viewModel.currentPlan.collectAsState()
+    System.out.println("[SETTLEMENT_DEBUG] SettlementPlanScreen render transfers count: " + (plan?.transfers?.size ?: "null"))
 
     Column(
         modifier = Modifier
@@ -53,7 +57,7 @@ fun SettlementPlanScreen(
                 items(transfers) { transfer ->
                     TripCard {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(TripSpacing.S),
+                            modifier = Modifier.fillMaxWidth().wrapContentHeight(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                         ) {

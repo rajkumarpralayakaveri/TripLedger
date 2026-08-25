@@ -447,10 +447,14 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
 
     suspend fun getSettlementPlan(workspaceId: String, currency: String = "INR"): Result<com.rkdevstudios.tripledger.features.settlement.domain.SettlementPlanItem> {
         return try {
+            System.out.println("[SETTLEMENT_DEBUG] WorkspaceRepository.getSettlementPlan called")
             val response = workspaceApiService.getSettlementPlan(workspaceId)
+            System.out.println("[SETTLEMENT_DEBUG] WorkspaceRepository response.success=" + response.success + ", data=" + (response.data != null))
             if (response.success && response.data != null) {
                 val data = response.data
+                System.out.println("[SETTLEMENT_DEBUG] WorkspaceRepository transfers dto count: " + data.transfers.size)
                 val transfers = data.transfers.map { dto ->
+                    System.out.println("[SETTLEMENT_DEBUG] Map transfer DTO id=" + dto.id + " amount=" + dto.amount)
                     com.rkdevstudios.tripledger.features.settlement.domain.SettlementTransferItem(
                         id = dto.id,
                         fromUserId = dto.fromUserId,
@@ -474,6 +478,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                 Result.failure(Exception(response.error?.message ?: "Failed to fetch settlement plan"))
             }
         } catch (e: Exception) {
+            System.out.println("[SETTLEMENT_DEBUG] WorkspaceRepository exception: " + e.message)
             Result.failure(e)
         }
     }

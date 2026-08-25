@@ -242,11 +242,16 @@ class WorkspaceViewModel(
 
     fun refreshSettlementPlan(workspaceId: String) {
         viewModelScope.launch {
+            System.out.println("[SETTLEMENT_DEBUG] refreshSettlementPlan called for: " + workspaceId)
             workspaceRepository.getSettlementPlan(workspaceId).fold(
                 onSuccess = { plan ->
+                    System.out.println("[SETTLEMENT_DEBUG] refreshSettlementPlan success. Transfers count: " + (plan?.transfers?.size ?: 0))
                     _currentPlan.value = plan
                 },
-                onFailure = { _ -> }
+                onFailure = { err -> 
+                    System.out.println("[SETTLEMENT_DEBUG] refreshSettlementPlan failure: " + err.message)
+                    err.printStackTrace()
+                }
             )
         }
     }
