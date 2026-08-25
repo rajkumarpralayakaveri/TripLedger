@@ -166,4 +166,41 @@ public class SettlementEngineTest {
         assertTrue(optimizedTransfers.stream().anyMatch(t -> t.fromUserId().equals("e732ab7b-9d12-40ce-b19b-330c36871f1f") 
                 && t.toUserId().equals("b9c08de4-a885-4c63-aa5b-d4be916e4ade") && t.amount().getAmount().compareTo(BigDecimal.valueOf(33.3334)) == 0));
     }
+
+    @Test
+    public void testOptimizeSnacksExpenseWithUpdateScenario() {
+        // Old expense: 500 -> New expense: 100
+        PlannedContribution pc1 = new PlannedContribution("pc1", "ws1", "usr_payer", BigDecimal.valueOf(500));
+        PlannedContribution pc2 = new PlannedContribution("pc2", "ws1", "usr_debtor1", BigDecimal.valueOf(500));
+        PlannedContribution pc3 = new PlannedContribution("pc3", "ws1", "usr_debtor2", BigDecimal.valueOf(500));
+
+        // Corrected update entries: original 500 negated by adjustment, and new 100 recorded
+        ContributionEntry ce1 = new ContributionEntry("ce1", "ws1", "usr_payer", ContributionEntryType.DIRECT_EXPENSE, BigDecimal.valueOf(500), "Evening Snacks", "e1");
+        ContributionEntry ce2 = new ContributionEntry("ce2", "ws1", "usr_payer", ContributionEntryType.ADJUSTMENT, BigDecimal.valueOf(-500), "Evening Snacks Correction", "e1");
+        ContributionEntry ce3 = new ContributionEntry("ce3", "ws1", "usr_payer", ContributionEntryType.DIRECT_EXPENSE, BigDecimal.valueOf(100), "Evening Snacks Updated", "e1");
+
+        // Split allocations for the updated 100 amount (e.g. split equally 33.3333 / 33.3333 / 33.3334)
+        SplitAllocation sa1 = new SplitAllocation("sa1", "e1", "usr_payer", new Money(BigDecimal.valueOf(33.3333), "INR"), BigDecimal.valueOf(1));
+        SplitAllocation sa2 = new SplitAllocation("sa2", "e1", "usr_debtor1", new Money(BigDecimal.valueOf(33.3333), "INR"), BigDecimal.valueOf(1));
+        SplitAllocation sa3 = new SplitAllocation("sa3", "e1", "usr_debtor2", new Money(BigDecimal.valueOf(33.3334), "INR"), BigDecimal.valueOf(1));
+
+        WorkspaceFinancialState state = new WorkspaceFinancialState(
+                "ws1",
+                List.of(pc1, pc2, pc3),
+                List.of(ce1, ce2, ce3),
+                Collections.emptyList(),
+                List.of(sa1, sa2, sa3),
+                Collections.emptyList()
+        );
+
+        List<MemberBalance> balances = settlementEngine.calculateBalances(state, "INR");
+        BigDecimal sumBalances = balances.stream()
+                .map(mb -> mb.balance().getAmount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(0, sumBalances.setScale(4).compareTo(BigDecimal.ZERO.setScale(4)));
+
+        com.rkdevstudios.tripledger.settlement.domain.GreedySettlementOptimizer optimizer = new com.rkdevstudios.tripledger.settlement.domain.GreedySettlementOptimizer();
+        List<com.rkdevstudios.tripledger.settlement.domain.SettlementTransfer> optimizedTransfers = optimizer.optimize(balances, "INR");
+        assertEquals(2, optimizedTransfers.size());
+    }
 }

@@ -155,6 +155,20 @@ public class SettlementService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Transfer recommendation not found in current plan"));
 
+        // Idempotency check:
+        List<SettlementTransaction> existingTransactions = transactionRepository.findByWorkspaceId(workspaceId);
+        boolean alreadyConfirmed = existingTransactions.stream()
+                .anyMatch(st -> st.getStatus() == SettlementStatus.CONFIRMED 
+                        && sessionId.equals(st.getSessionId())
+                        && target.fromUserId().equals(st.getFromUserId())
+                        && target.toUserId().equals(st.getToUserId())
+                        && st.getMoney().getAmount().compareTo(target.amount().getAmount()) == 0);
+
+        if (alreadyConfirmed) {
+            // Already confirmed, return gracefully to preserve idempotency
+            return;
+        }
+
         // Create confirmed transaction
         SettlementTransaction transaction = new SettlementTransaction(
                 UUID.randomUUID().toString(),
