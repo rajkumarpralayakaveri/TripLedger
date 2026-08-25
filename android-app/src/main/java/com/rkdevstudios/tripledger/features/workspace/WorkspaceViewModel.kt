@@ -124,6 +124,12 @@ class WorkspaceViewModel(
     private val _currentHistory = MutableStateFlow<List<SettlementHistoryGroupItem>>(emptyList())
     val currentHistory: StateFlow<List<SettlementHistoryGroupItem>> = _currentHistory.asStateFlow()
 
+    private val _isLoadingPlan = MutableStateFlow(false)
+    val isLoadingPlan: StateFlow<Boolean> = _isLoadingPlan.asStateFlow()
+
+    private val _planError = MutableStateFlow<String?>(null)
+    val planError: StateFlow<String?> = _planError.asStateFlow()
+
     fun loadWorkspaces() {
         viewModelScope.launch {
             _isLoadingWorkspaces.value = true
@@ -242,6 +248,8 @@ class WorkspaceViewModel(
 
     fun refreshSettlementPlan(workspaceId: String) {
         viewModelScope.launch {
+            _isLoadingPlan.value = true
+            _planError.value = null
             System.out.println("[SETTLEMENT_DEBUG] refreshSettlementPlan called for: " + workspaceId)
             workspaceRepository.getSettlementPlan(workspaceId).fold(
                 onSuccess = { plan ->
@@ -251,8 +259,15 @@ class WorkspaceViewModel(
                 onFailure = { err -> 
                     System.out.println("[SETTLEMENT_DEBUG] refreshSettlementPlan failure: " + err.message)
                     err.printStackTrace()
+                    val friendlyMsg = when (err) {
+                        is java.net.UnknownHostException -> "No internet connection. Please check your network and try again."
+                        is java.net.SocketTimeoutException -> "Connection timed out. Please try again."
+                        else -> err.message ?: "Failed to fetch settlement plan"
+                    }
+                    _planError.value = friendlyMsg
                 }
             )
+            _isLoadingPlan.value = false
         }
     }
 

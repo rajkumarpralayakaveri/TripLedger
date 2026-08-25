@@ -26,7 +26,9 @@ fun SettlementPlanScreen(
         viewModel.selectWorkspace(workspaceId)
     }
     val plan by viewModel.currentPlan.collectAsState()
-    System.out.println("[SETTLEMENT_DEBUG] SettlementPlanScreen render transfers count: " + (plan?.transfers?.size ?: "null"))
+    val isLoadingPlan by viewModel.isLoadingPlan.collectAsState()
+    val planError by viewModel.planError.collectAsState()
+    System.out.println("[SETTLEMENT_DEBUG] SettlementPlanScreen render transfers count: " + (plan?.transfers?.size ?: "null") + " isLoading=" + isLoadingPlan + " error=" + planError)
 
     Column(
         modifier = Modifier
@@ -45,7 +47,25 @@ fun SettlementPlanScreen(
             verticalArrangement = Arrangement.spacedBy(TripSpacing.S)
         ) {
             val transfers = plan?.transfers ?: emptyList()
-            if (transfers.isEmpty()) {
+            if (isLoadingPlan) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(TripSpacing.M),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator()
+                    }
+                }
+            } else if (planError != null) {
+                item {
+                    Text(
+                        text = planError ?: "An error occurred",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(TripSpacing.S)
+                    )
+                }
+            } else if (transfers.isEmpty()) {
                 item {
                     Text(
                         text = "All balances settled! No transfers needed.",
