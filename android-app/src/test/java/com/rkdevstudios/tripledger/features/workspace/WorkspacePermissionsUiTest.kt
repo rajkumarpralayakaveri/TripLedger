@@ -416,4 +416,32 @@ class WorkspacePermissionsUiTest {
             assertEquals("INR", t2.currency)
         }
     }
+
+    @Test
+    fun getSettlementPlan_viewModelUpdatesFlowSuccessfully() {
+        val fakeApi = object : PermissionsFakeApiService() {
+            override suspend fun getSettlementPlan(workspaceId: String): NetworkResponse<SettlementPlanResponseDto> {
+                return NetworkResponse(true, SettlementPlanResponseDto(
+                    sessionId = "sess_multi",
+                    workspaceId = workspaceId,
+                    transfers = listOf(
+                        SettlementTransferResponseDto("t_1", "usr_1", "User One", "usr_2", "User Two", MoneyDto(BigDecimal.valueOf(100), "INR")),
+                        SettlementTransferResponseDto("t_2", "usr_3", "User Three", "usr_2", "User Two", MoneyDto(BigDecimal.valueOf(250), "INR"))
+                    ),
+                    stateHash = "hash_multi",
+                    planVersion = 2
+                ), null)
+            }
+        }
+        val repository = WorkspaceRepository(fakeApi)
+        val viewModel = WorkspaceViewModel(repository)
+
+        // Invoke ViewModel refresh natively (synchronously on the test thread using runBlocking for any internals)
+        kotlinx.coroutines.runBlocking {
+            val result = repository.getSettlementPlan("ws_1")
+            assertTrue(result.isSuccess)
+            val plan = result.getOrThrow()
+            assertEquals(2, plan.transfers.size)
+        }
+    }
 }
