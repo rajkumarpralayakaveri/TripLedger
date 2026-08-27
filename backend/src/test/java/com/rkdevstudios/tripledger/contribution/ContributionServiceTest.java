@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import com.rkdevstudios.tripledger.expense.application.ContributionExpenseListener;
+import com.rkdevstudios.tripledger.expense.domain.*;
 import com.rkdevstudios.tripledger.identity.domain.User;
 import com.rkdevstudios.tripledger.identity.domain.UserRepository;
 import java.math.BigDecimal;
@@ -350,5 +352,74 @@ class ContributionServiceTest {
         assertThrows(IllegalArgumentException.class, () -> {
             contributionService.updateMemberPlannedContribution(workspaceId, targetUser, BigDecimal.valueOf(2000), callerUser);
         });
+    }
+
+    @Test
+    void testNonAdminUpdateContributionLedger() {
+        String workspaceId = "ws_1";
+        String payerId = "usr_member";
+        BigDecimal originalAmount = BigDecimal.valueOf(500);
+        BigDecimal updatedAmount = BigDecimal.valueOf(100);
+        String expenseId = "exp_100";
+
+        // Mock users and roles (Payer is a non-admin MEMBER)
+        WorkspaceMember member = new WorkspaceMember(workspaceId, payerId, MemberRole.MEMBER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, payerId))
+                .thenReturn(Optional.of(member));
+
+        ContributionEntry mockDirectExpense = new ContributionEntry("e1", workspaceId, payerId, ContributionEntryType.DIRECT_EXPENSE, originalAmount, "Direct Expense: beach party", expenseId);
+        when(contributionEntryRepository.save(any(ContributionEntry.class))).thenAnswer(i -> i.getArgument(0));
+
+        ContributionExpenseListener listener = new ContributionExpenseListener(contributionService);
+
+        // Original Expense
+        Expense oldExpense = new Expense(expenseId, workspaceId, payerId, new Money(originalAmount, "INR"), "beach party", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, payerId);
+        // Updated Expense
+        Expense updatedExpense = new Expense(expenseId, workspaceId, payerId, new Money(updatedAmount, "INR"), "beach party", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, payerId);
+
+        ExpenseUpdatedEvent event = new ExpenseUpdatedEvent(oldExpense, updatedExpense);
+
+        // Trigger listener - should not throw SecurityException since it bypasses auth via recordAdjustmentInternal
+        assertDoesNotThrow(() -> listener.onExpenseUpdated(event));
+
+        // Verify recordAdjustmentInternal saves the negative adjustment and directExpense is recorded for new amount
+        verify(contributionEntryRepository, times(1)).save(argThat(entry -> 
+            entry.getEntryType() == ContributionEntryType.ADJUSTMENT && 
+            entry.getAmount().compareTo(originalAmount.negate()) == 0
+        ));
+
+        verify(contributionEntryRepository, times(1)).save(argThat(entry -> 
+            entry.getEntryType() == ContributionEntryType.DIRECT_EXPENSE && 
+            entry.getAmount().compareTo(updatedAmount) == 0
+        ));
+    }
+
+    @Test
+    void testNonAdminDeleteContributionLedger() {
+        String workspaceId = "ws_1";
+        String payerId = "usr_member";
+        BigDecimal amount = BigDecimal.valueOf(100);
+        String expenseId = "exp_100";
+
+        // Payer is a non-admin MEMBER
+        WorkspaceMember member = new WorkspaceMember(workspaceId, payerId, MemberRole.MEMBER);
+        when(workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, payerId))
+                .thenReturn(Optional.of(member));
+
+        when(contributionEntryRepository.save(any(ContributionEntry.class))).thenAnswer(i -> i.getArgument(0));
+
+        ContributionExpenseListener listener = new ContributionExpenseListener(contributionService);
+
+        Expense deletedExpense = new Expense(expenseId, workspaceId, payerId, new Money(amount, "INR"), "beach party", "cat_1", LocalDate.now(), java.time.Instant.now(), null, null, SplitType.EQUAL, payerId);
+        ExpenseDeletedEvent event = new ExpenseDeletedEvent(deletedExpense, "reason", payerId);
+
+        // Trigger listener - should not throw SecurityException
+        assertDoesNotThrow(() -> listener.onExpenseDeleted(event));
+
+        // Verify recordAdjustmentInternal saves the negative adjustment to zero out contribution
+        verify(contributionEntryRepository, times(1)).save(argThat(entry -> 
+            entry.getEntryType() == ContributionEntryType.ADJUSTMENT && 
+            entry.getAmount().compareTo(amount.negate()) == 0
+        ));
     }
 }
