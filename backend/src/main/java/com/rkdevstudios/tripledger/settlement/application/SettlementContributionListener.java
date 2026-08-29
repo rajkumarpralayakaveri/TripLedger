@@ -23,22 +23,27 @@ public class SettlementContributionListener {
     public void onSettlementConfirmed(SettlementConfirmedEvent event) {
         SettlementTransaction st = event.transaction();
 
-        // 1. Debtor has paid their debt -> increases their contribution cash flow
-        contributionService.recordCashContribution(
-                st.getWorkspaceId(),
-                st.getFromUserId(),
-                st.getMoney().getAmount(),
-                "Repayment transfer to user: " + st.getToUserId(),
-                st.getFromUserId()
-        );
+        try {
+            // 1. Debtor has paid their debt -> increases their contribution cash flow
+            contributionService.recordCashContributionInternal(
+                    st.getWorkspaceId(),
+                    st.getFromUserId(),
+                    st.getMoney().getAmount(),
+                    "Repayment transfer to user: " + st.getToUserId()
+            );
 
-        // 2. Creditor received cash repayment -> offsets their net outstanding credits
-        contributionService.recordAdjustment(
-                st.getWorkspaceId(),
-                st.getToUserId(),
-                st.getMoney().getAmount().negate(),
-                "Received repayment from user: " + st.getFromUserId(),
-                st.getToUserId()
-        );
+            // 2. Creditor received cash repayment -> offsets their net outstanding credits
+            contributionService.recordAdjustmentInternal(
+                    st.getWorkspaceId(),
+                    st.getToUserId(),
+                    st.getMoney().getAmount().negate(),
+                    "Received repayment from user: " + st.getFromUserId(),
+                    st.getId()
+            );
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(SettlementContributionListener.class)
+                    .error("Failed to synchronize contribution entry for confirmed settlement {}", st.getId(), e);
+            throw e;
+        }
     }
 }

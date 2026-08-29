@@ -2,6 +2,7 @@ package com.rkdevstudios.tripledger.settlement;
 
 import com.rkdevstudios.tripledger.contribution.domain.*;
 import com.rkdevstudios.tripledger.expense.domain.*;
+import com.rkdevstudios.tripledger.settlement.application.SettlementContributionListener;
 import com.rkdevstudios.tripledger.settlement.application.SettlementService;
 import com.rkdevstudios.tripledger.settlement.domain.*;
 import com.rkdevstudios.tripledger.workspace.domain.Workspace;
@@ -129,5 +130,48 @@ public class SettlementServiceTest {
         // Verify save and event publisher calls DID NOT increase (remain at 1)
         verify(transactionRepository, times(1)).save(any(SettlementTransaction.class));
         verify(eventPublisher, times(1)).publishEvent(any(SettlementConfirmedEvent.class));
+    }
+
+    @Test
+    public void testNonAdminSettlementContributionListenerBypassesAuth() {
+        String workspaceId = "ws_1";
+        String debtorId = "usr_member";
+        String creditorId = "usr_creditor";
+        BigDecimal amount = BigDecimal.valueOf(250);
+
+        com.rkdevstudios.tripledger.contribution.domain.ContributionEntryRepository contributionRepo = mock(com.rkdevstudios.tripledger.contribution.domain.ContributionEntryRepository.class);
+        com.rkdevstudios.tripledger.workspace.domain.WorkspaceMemberRepository memberRepo = mock(com.rkdevstudios.tripledger.workspace.domain.WorkspaceMemberRepository.class);
+        com.rkdevstudios.tripledger.contribution.domain.PlannedContributionRepository plannedRepo = mock(com.rkdevstudios.tripledger.contribution.domain.PlannedContributionRepository.class);
+        com.rkdevstudios.tripledger.workspace.domain.WorkspaceRepository wsRepo = mock(com.rkdevstudios.tripledger.workspace.domain.WorkspaceRepository.class);
+        com.rkdevstudios.tripledger.identity.domain.UserRepository userRepo = mock(com.rkdevstudios.tripledger.identity.domain.UserRepository.class);
+        SplitAllocationRepository saRepo = mock(SplitAllocationRepository.class);
+        ExpenseRepository expRepo = mock(ExpenseRepository.class);
+
+        com.rkdevstudios.tripledger.contribution.application.ContributionService contributionService = new com.rkdevstudios.tripledger.contribution.application.ContributionService(
+                plannedRepo,
+                contributionRepo,
+                memberRepo,
+                wsRepo,
+                userRepo,
+                saRepo,
+                expRepo
+        );
+
+        // Debtor is a non-admin MEMBER
+        com.rkdevstudios.tripledger.workspace.domain.WorkspaceMember member = new com.rkdevstudios.tripledger.workspace.domain.WorkspaceMember(workspaceId, debtorId, com.rkdevstudios.tripledger.workspace.domain.MemberRole.MEMBER);
+        when(memberRepo.findByWorkspaceIdAndUserId(workspaceId, debtorId)).thenReturn(Optional.of(member));
+        when(contributionRepo.save(any(com.rkdevstudios.tripledger.contribution.domain.ContributionEntry.class))).thenAnswer(i -> i.getArgument(0));
+
+        SettlementContributionListener listener = new SettlementContributionListener(contributionService);
+
+        SettlementTransaction st = new SettlementTransaction("st_1", workspaceId, "sess_1", debtorId, creditorId, new Money(amount, "INR"));
+        st.setStatus(SettlementStatus.CONFIRMED);
+
+        SettlementConfirmedEvent event = new SettlementConfirmedEvent(st);
+
+        // Should not throw SecurityException even though actor is a non-admin MEMBER
+        assertDoesNotThrow(() -> listener.onSettlementConfirmed(event));
+
+        verify(contributionRepo, times(2)).save(any(com.rkdevstudios.tripledger.contribution.domain.ContributionEntry.class));
     }
 }

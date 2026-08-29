@@ -181,6 +181,25 @@ public class ContributionService {
     }
 
     @Transactional
+    public ContributionEntry recordCashContributionInternal(
+            String workspaceId,
+            String userId,
+            BigDecimal amount,
+            String description
+    ) {
+        ContributionEntry entry = new ContributionEntry(
+                UUID.randomUUID().toString(),
+                workspaceId,
+                userId,
+                ContributionEntryType.CASH,
+                amount,
+                description,
+                null
+        );
+        return contributionEntryRepository.save(entry);
+    }
+
+    @Transactional
     public ContributionEntry recordAdjustment(
             String workspaceId,
             String userId,
