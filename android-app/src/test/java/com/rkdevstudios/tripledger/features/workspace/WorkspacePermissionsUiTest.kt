@@ -444,4 +444,38 @@ class WorkspacePermissionsUiTest {
             assertEquals(2, plan.transfers.size)
         }
     }
+
+    @Test
+    fun getSettlementPlan_transferFields_areNonEmptyAndFormatted() {
+        val fakeApi = object : PermissionsFakeApiService() {
+            override suspend fun getSettlementPlan(workspaceId: String): NetworkResponse<SettlementPlanResponseDto> {
+                return NetworkResponse(true, SettlementPlanResponseDto(
+                    sessionId = "sess_multi",
+                    workspaceId = workspaceId,
+                    transfers = listOf(
+                        SettlementTransferResponseDto("t_1", "usr_1", "User One", "usr_2", "User Two", MoneyDto(BigDecimal.valueOf(100), "INR"))
+                    ),
+                    stateHash = "hash_multi",
+                    planVersion = 1
+                ), null)
+            }
+        }
+        val repository = WorkspaceRepository(fakeApi)
+
+        kotlinx.coroutines.runBlocking {
+            val result = repository.getSettlementPlan("ws_1")
+            assertTrue(result.isSuccess)
+            val item = result.getOrThrow().transfers.first()
+            
+            // 1. Verify Compose state strings are non-empty and non-blank
+            assertTrue(item.fromUserName.isNotBlank())
+            assertTrue(item.toUserName.isNotBlank())
+            assertEquals("User One", item.fromUserName)
+            assertEquals("User Two", item.toUserName)
+            
+            // 2. Verify money formatting produces expected label string
+            val formatted = com.rkdevstudios.tripledger.core.utils.CurrencyFormatter.formatMoney(item.amount, item.currency)
+            assertEquals("₹100.00", formatted)
+        }
+    }
 }

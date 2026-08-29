@@ -96,7 +96,8 @@ fun SettlementPlanScreen(
                                 text = "Confirm",
                                 onClick = {
                                     viewModel.confirmTransfer(workspaceId, transfer.id, plan?.sessionId ?: "")
-                                }
+                                },
+                                modifier = Modifier.wrapContentWidth()
                             )
                         }
                     }
