@@ -63,7 +63,8 @@ fun InviteMembersScreen(
 
         TripButton(
             text = "Back",
-            onClick = onNavigateBack
+            onClick = onNavigateBack,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

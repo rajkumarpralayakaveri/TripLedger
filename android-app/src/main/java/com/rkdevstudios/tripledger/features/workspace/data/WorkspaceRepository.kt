@@ -431,9 +431,9 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
                     com.rkdevstudios.tripledger.features.settlement.domain.MemberBalanceItem(
                         userId = dto.userId,
                         userName = dto.userName,
-                        paid = dto.paid,
-                        owed = dto.owed,
-                        balance = dto.balance
+                        paid = dto.paid.amount,
+                        owed = dto.owed.amount,
+                        balance = dto.balance.amount
                     )
                 }
                 Result.success(mapped)

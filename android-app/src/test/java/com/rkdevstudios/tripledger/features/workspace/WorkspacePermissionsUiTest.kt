@@ -138,7 +138,7 @@ class WorkspacePermissionsUiTest {
 
         override suspend fun getBalances(workspaceId: String): NetworkResponse<BalancesResponseDto> {
             return NetworkResponse(true, BalancesResponseDto(listOf(
-                MemberBalanceResponseDto("usr_raj", "Raj", BigDecimal.valueOf(1000), BigDecimal.valueOf(500), BigDecimal.valueOf(500))
+                MemberBalanceResponseDto("usr_raj", "Raj", MoneyDto(BigDecimal.valueOf(1000), "INR"), MoneyDto(BigDecimal.valueOf(500), "INR"), MoneyDto(BigDecimal.valueOf(500), "INR"))
             )), null)
         }
 

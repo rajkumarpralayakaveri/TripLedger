@@ -379,9 +379,9 @@ data class ExpenseTimelineResponseDto(
 data class MemberBalanceResponseDto(
     val userId: String,
     val userName: String,
-    val paid: BigDecimal,
-    val owed: BigDecimal,
-    val balance: BigDecimal
+    val paid: MoneyDto,
+    val owed: MoneyDto,
+    val balance: MoneyDto
 )
 
 data class BalancesResponseDto(
