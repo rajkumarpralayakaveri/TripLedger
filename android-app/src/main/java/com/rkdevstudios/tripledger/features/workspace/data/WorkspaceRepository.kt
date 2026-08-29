@@ -501,7 +501,7 @@ class WorkspaceRepository(private val workspaceApiService: WorkspaceApiService) 
         return try {
             val response = workspaceApiService.getSettlementHistory(workspaceId)
             if (response.success && response.data != null) {
-                val mapped = response.data.history.map { groupDto ->
+                val mapped = response.data.groups.map { groupDto ->
                     com.rkdevstudios.tripledger.features.settlement.domain.SettlementHistoryGroupItem(
                         date = LocalDate.parse(groupDto.date),
                         transactions = groupDto.transactions.map { itemDto ->

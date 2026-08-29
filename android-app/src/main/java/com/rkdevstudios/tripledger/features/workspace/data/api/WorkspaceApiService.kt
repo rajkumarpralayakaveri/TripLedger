@@ -430,6 +430,6 @@ data class SettlementHistoryGroupDto(
 )
 
 data class SettlementHistoryResponseDto(
-    val history: List<SettlementHistoryGroupDto>
+    val groups: List<SettlementHistoryGroupDto>
 )
 
