@@ -38,7 +38,7 @@ public class SettlementContributionListener {
                     st.getToUserId(),
                     st.getMoney().getAmount().negate(),
                     "Received repayment from user: " + st.getFromUserId(),
-                    st.getId()
+                    null
             );
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(SettlementContributionListener.class)
